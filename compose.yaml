@@ -1,0 +1,28 @@
+services:
+  rss-postgres:
+    image: postgres:alpine
+    container_name: rss-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: rss_db
+      POSTGRES_USER: rss_user
+      POSTGRES_PASSWORD: rss_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  rss-aggregator:
+    build: .
+    container_name: rss-aggregator
+    restart: always
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rss-postgres
+    environment:
+      - DB_URL=postgresql://rss_user:rss_pass@rss-postgres/rss_db
+
+volumes:
+  postgres_data:
+    driver: local
