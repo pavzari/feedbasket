@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS entries (
     id SERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     link VARCHAR(255) NOT NULL,
+    published_date TIMESTAMP,
     description TEXT,
     etag TEXT,
     last_modified TEXT
@@ -11,9 +12,8 @@ CREATE TABLE IF NOT EXISTS entries (
 
 -- name: insert-entry!
 INSERT INTO entries
-(title, link, description)
-VALUES (:title, :link, :description)
+(title, link, description, published_date)
+VALUES (:title, :link, :description, :published_date)
 
 -- name: get-entries
-SELECT * FROM entries
-LIMIT 20;
+SELECT * FROM entries;

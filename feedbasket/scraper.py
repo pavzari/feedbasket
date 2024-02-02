@@ -1,70 +1,71 @@
 import asyncio
 import logging
-import time
+from datetime import datetime
+from time import mktime
 
 import aiosql
-import asyncpg
 import feedparser
 from aiohttp import ClientConnectorError, ClientResponseError, ClientSession
+from asyncpg import Pool
+from pydantic import BaseModel, HttpUrl, validator
 
-DEFAULT_FEEDS = [
-    "https://feeds.arstechnica.com/arstechnica/features.xml",
-    "https://pluralistic.net/feed/",
-    "https://www.theatlantic.com/feed/best-of/",
-    "https://www.quantamagazine.org/feed",
-    "https://www.reddit.com/r/python/top.rss",
-    "https://lobste.rs/top/rss",
-    "https://hnrss.org/best",
-    "https://en.wikipedia.org/w/api.php?action=featuredfeed&feed=featured&feedformat=atom",
-    "https://www.openculture.com/feed/rss2",
-    "https://publicdomainreview.org/rss.xml",
-    "https://www.eff.org/rss/updates.xml",
-    "https://www.theverge.com/features/rss/index.xml",
-    "https://www.bbc.com/culture/feed.rss",
-    "https://blog.opensource.org/feed/",
-    "https://www.technologyreview.com/feed/",
-    "https://simonwillison.net/atom/everything/",
-]
+from feedbasket.config import DEFAULT_FEEDS, GET_TIMEOUT, USER_AGENT
 
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
-DB_URL = "postgresql://pav:password@localhost/rss"
-TIMEOUT = 5
-POOL_MIN = 5
-POOL_MAX = 20
 
-logging.basicConfig(level="DEBUG")
+class FeedEntry(BaseModel):
+    title: str
+    link: HttpUrl
+    description: str
+    published_date: datetime
+
+    @validator("published_date", pre=True, always=True)
+    def parse_published_date(cls, value):
+        return datetime.fromtimestamp(mktime(value))
 
 
 class FeedScraper:
-    def __init__(self, dburl, feeds=None):
+    def __init__(self, pool: Pool, queries: aiosql.from_path):
         self._log = logging.getLogger(__name__)
-        self._feeds = feeds or DEFAULT_FEEDS
-        self._dburl = dburl
-        self._dbpool = None
-        self._queries = aiosql.from_path("sql/test_queries.sql", "asyncpg")
+        self._pool = pool
+        self._queries = queries
+        self._log.info("Feed scraper initialized.")
 
     async def _insert_into_db(self, entries, url):
-        self._log.info(f"Inserting into db: {url}")
-        async with self._dbpool.acquire() as conn:
+        self._log.info(f"Updating feed: {url}")
+        async with self._pool.acquire() as conn:
             for entry in entries:
+
                 await self._queries.insert_entry(
                     conn,
-                    title=entry["title"],
-                    link=entry["link"],
-                    description=entry["description"],
+                    title=entry.title,
+                    link=entry.link,
+                    description=entry.description,
+                    published_date=entry.published_date,
+                    # title=entry["title"],
+                    # link=entry["link"],
+                    # description=entry["description"],
+                    # published_date=entry["published_date"],
                 )
-        self._log.info(f"INSERTED: {url}")
+        self._log.info(f"Updated feed: {url}")
 
     def _parse_feed(self, feed_data):
         entries = []
         for entry in feed_data.entries:
             entries.append(
-                {
-                    "title": entry.get("title", ""),
-                    "link": entry.get("link", ""),
-                    "description": entry.get("description", ""),
-                }
+                FeedEntry(
+                    title=entry.get("title", ""),
+                    link=entry.get("link", ""),
+                    description=entry.get("description", ""),
+                    published_date=entry.get("published_parsed", " "),
+                ),
             )
+            # {
+            #     "title": entry.get("title", ""),
+            #     "link": entry.get("link", ""),
+            #     "description": entry.get("description", ""),
+            #     "published_date": entry.get("published_parsed", " "),
+            # }
+        # )
         return entries
 
     async def _fetch_and_insert(self, session, url):
@@ -79,14 +80,15 @@ class FeedScraper:
 
         try:
             async with session.get(
-                url, raise_for_status=True, timeout=TIMEOUT, headers=headers
+                url, raise_for_status=True, timeout=GET_TIMEOUT, headers=headers
             ) as response:
+
                 # if response.status == 304:
                 #     self._log.info("No updates to: %s", url)
                 #     return
 
                 feed_data = feedparser.parse(await response.text())
-                self._log.info("Fetched XML for: %s", url)
+                self._log.info("Fetched XML: %s", url)
                 entries = self._parse_feed(feed_data)
                 await self._insert_into_db(entries, url)
 
@@ -97,25 +99,29 @@ class FeedScraper:
         except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
             self._log.error("Could not fetch feed: %s", url)
 
-    async def _init_db(self):
-        if self._dbpool is None:
-            self._dbpool = await asyncpg.create_pool(
-                self._dburl, min_size=POOL_MIN, max_size=POOL_MAX
-            )
-
-        async with self._dbpool.acquire() as conn:
-            await self._queries.create_entries_table(conn)
+    # async def _update_feed_info_in_db(self, url, headers):
+    #     async with self._pool.acquire() as conn:
+    #         await self._queries.update_feed_info(conn, url, headers)
 
     async def run_scraper(self):
-        await self._init_db()
+
+        # get the feeds from the feeds table:
+        # assign them to the self._feeds variable
+
+        # async with self._pool.acquire() as conn:
+        #     feeds = await self._queries.get_feeds(conn)
+
+        #     if not feeds:
+        #         self._log.info("No feeds found. Using default feeds.")
+        #         self._feeds = DEFAULT_FEEDS (read from feeds.csv here or call that function.)
 
         async with ClientSession() as session:
-            tasks = [self._fetch_and_insert(session, feed) for feed in self._feeds]
+            tasks = [self._fetch_and_insert(session, feed) for feed in DEFAULT_FEEDS]
             await asyncio.gather(*tasks)
 
 
-if __name__ == "__main__":
-    start_time = time.time()
-    scraper = FeedScraper(DB_URL)
-    asyncio.run(scraper.run_scraper())
-    print("--- %s seconds ---" % (time.time() - start_time))
+# if __name__ == "__main__":
+#     start_time = time.time()
+#     scraper = FeedScraper(DB_URL)
+#     asyncio.run(scraper.run_scraper())
+#     print("--- %s seconds ---" % (time.time() - start_time))

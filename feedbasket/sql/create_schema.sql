@@ -20,6 +20,7 @@ CREATE TABLE feeds (
 
     etag TEXT,
     modified_header TEXT, -- timestamp?
+    
     -- user_id UUID REFERENCES users (user_id)
 
 
