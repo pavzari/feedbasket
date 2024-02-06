@@ -1,6 +1,6 @@
 import asyncio
-import contextlib
 import logging
+import contextlib
 
 import aiosql
 import asyncpg
@@ -11,19 +11,11 @@ from fastapi.templating import Jinja2Templates
 from feedbasket.config import FETCH_INTERVAL_SEC, LOG_LEVEL
 from feedbasket.database import close_db_pool, create_db_pool, create_schema
 from feedbasket.scraper import FeedScraper
+from feedbasket.filters import display_publication_date
 
-# from pydantic import BaseModel
 
 logging.basicConfig(level=LOG_LEVEL)
 log = logging.getLogger(__name__)
-
-# class Entry(BaseModel):
-#     id: int
-#     title: str
-#     link: str
-#     description: str | None
-#     etag: str | None
-#     last_modified: str | None
 
 
 @contextlib.asynccontextmanager
@@ -38,6 +30,7 @@ async def lifespan(app: FastAPI) -> None:
 app = FastAPI(lifespan=lifespan)
 queries = aiosql.from_path("./feedbasket/sql", "asyncpg")
 templates = Jinja2Templates(directory="./feedbasket/templates")
+templates.env.filters["display_publication_date"] = display_publication_date
 
 
 async def scrape_feeds(db_pool: asyncpg.Pool) -> None:

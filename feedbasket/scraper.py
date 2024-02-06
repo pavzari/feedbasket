@@ -11,30 +11,33 @@ from pydantic import BaseModel, HttpUrl, validator
 
 from feedbasket.config import DEFAULT_FEEDS, GET_TIMEOUT, USER_AGENT
 
+log = logging.getLogger(__name__)
+
 
 class FeedEntry(BaseModel):
     title: str
-    link: HttpUrl
+    link: str  # = HttpUrl
     description: str
-    published_date: datetime
+    published_date: datetime | None
 
     @validator("published_date", pre=True, always=True)
     def parse_published_date(cls, value):
-        return datetime.fromtimestamp(mktime(value))
+        try:
+            return datetime.fromtimestamp(mktime(value))
+        except (ValueError, TypeError):
+            log.info("Could not parse date")
 
 
 class FeedScraper:
     def __init__(self, pool: Pool, queries: aiosql.from_path):
-        self._log = logging.getLogger(__name__)
         self._pool = pool
         self._queries = queries
-        self._log.info("Feed scraper initialized.")
+        log.info("Feed scraper initialized.")
 
     async def _insert_into_db(self, entries, url):
-        self._log.info(f"Updating feed: {url}")
+        log.info(f"Updating feed: {url}")
         async with self._pool.acquire() as conn:
             for entry in entries:
-
                 await self._queries.insert_entry(
                     conn,
                     title=entry.title,
@@ -46,9 +49,9 @@ class FeedScraper:
                     # description=entry["description"],
                     # published_date=entry["published_date"],
                 )
-        self._log.info(f"Updated feed: {url}")
+        log.info(f"Updated feed: {url}")
 
-    def _parse_feed(self, feed_data):
+    def _parse_feed(self, feed_data) -> list[FeedEntry]:
         entries = []
         for entry in feed_data.entries:
             entries.append(
@@ -69,7 +72,7 @@ class FeedScraper:
         return entries
 
     async def _fetch_and_insert(self, session, url):
-        self._log.info("Attempting to fetch: %s", url)
+        log.info("Attempting to fetch: %s", url)
 
         headers = {"User-Agent": USER_AGENT}
 
@@ -88,7 +91,7 @@ class FeedScraper:
                 #     return
 
                 feed_data = feedparser.parse(await response.text())
-                self._log.info("Fetched XML: %s", url)
+                log.info("Fetched XML: %s", url)
                 entries = self._parse_feed(feed_data)
                 await self._insert_into_db(entries, url)
 
@@ -97,7 +100,7 @@ class FeedScraper:
                 # await self._update_feed_info_in_db(url, headers)
 
         except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
-            self._log.error("Could not fetch feed: %s", url)
+            log.error("Could not fetch feed: %s", url)
 
     # async def _update_feed_info_in_db(self, url, headers):
     #     async with self._pool.acquire() as conn:
