@@ -1,12 +1,13 @@
 from datetime import datetime
+from urllib.parse import urlparse
 
 
-def display_publication_date(date):
-
-    if date is None:
+def display_publication_date(entry_date: datetime | None) -> str:
+    """Format the publication date to be more readable."""
+    if entry_date is None:
         return ""
 
-    delta = datetime.utcnow() - date
+    delta = datetime.utcnow() - entry_date
 
     if delta.total_seconds() < 60:
         return f"{delta.seconds}s ago"
@@ -19,4 +20,10 @@ def display_publication_date(date):
     elif delta.days < 365:
         return f"{delta.days} day{'s' if delta.days > 1 else ''} ago"
     else:
-        return date.strftime("%b %Y")
+        return entry_date.strftime("%b %Y")
+
+
+def display_feed_url(feed_url: str) -> str:
+    """Extract the main site URL from a feed URL."""
+    parsed_url = urlparse(feed_url)
+    return parsed_url.netloc.replace("www.", "")

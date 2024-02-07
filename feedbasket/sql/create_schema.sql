@@ -7,44 +7,41 @@
 
 CREATE TABLE feeds (
     feed_id SERIAL PRIMARY KEY,
+    feed_url TEXT UNIQUE NOT NULL,
+
+    feed_name TEXT NOT NULL,
+
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    name TEXT NOT NULL,
-    url TEXT UNIQUE NOT NULL,
-    last_fetched TIMESTAMP
+    last_fetched TIMESTAMP,
 
     feed_type TEXT,
-    folder TEXT,
-    icon_url TEXT, -- favicon
-    entries_count INT,--- Type?
+    feed_tags TEXT, -- tag?
+    icon_url TEXT, -- favicon?
 
     etag TEXT,
-    modified_header TEXT, -- timestamp?
+    modified_header TEXT,
     
     -- user_id UUID REFERENCES users (user_id)
-
-
 )
 
 CREATE TABLE entries (
     entry_id SERIAL PRIMARY KEY,
-    feed_id INT REFERENCES feeds (feed_id)
+    entry_title TEXT NOT NULL,
+    entry_url TEXT UNIQUE NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    title TEXT NOT NULL,
-    url TEXT UNIQUE NOT NULL,
-    last_fetched_at TIMESTAMP
-
     publication_date TIMESTAMP,
     -- updated TIMESTAMP,
-
+    last_fetched_at TIMESTAMP
     content_short TEXT,
     content_full TEXT,
     author TEXT,
 
-    favourite BOOLEAN,
+    is_favourite BOOLEAN,
     viewed BOOLEAN,
 
+    feed_id INT REFERENCES feeds (feed_id)
     -- icon_url TEXT to display next to entry.
 
 )

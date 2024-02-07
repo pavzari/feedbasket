@@ -8,7 +8,7 @@
 </head>
 <body>
     {% for entry in entries %}
-    <p><a href="{{ entry.link }}">{{ entry.title }}</a> {{ entry.published_date | display_publication_date}}</p>
+    <p><a href="{{ entry.link }}">{{ entry.title }}</a> {{ entry.published_date | display_publication_date}} ({{ entry.link | display_feed_url }})</p>
     {% endfor %}
 </body>
 </html>

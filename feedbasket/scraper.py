@@ -2,6 +2,7 @@ import asyncio
 import logging
 from datetime import datetime
 from time import mktime
+from typing import Optional
 
 import aiosql
 import feedparser
@@ -9,14 +10,29 @@ from aiohttp import ClientConnectorError, ClientResponseError, ClientSession
 from asyncpg import Pool
 from pydantic import BaseModel, HttpUrl, validator
 
-from feedbasket.config import DEFAULT_FEEDS, GET_TIMEOUT, USER_AGENT
+from feedbasket.config import GET_TIMEOUT, USER_AGENT
+
 
 log = logging.getLogger(__name__)
 
 
+class Feed(BaseModel):
+    feed_id: int
+    feed_url: str
+    feed_name: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    last_fetched: Optional[datetime]
+    feed_type: Optional[str]
+    feed_tags: Optional[list[str]]
+    icon_url: Optional[str]
+    etag: Optional[str]
+    modified_header: Optional[str]  # Optional vs None?
+
+
 class FeedEntry(BaseModel):
     title: str
-    link: str  # = HttpUrl
+    link: str
     description: str
     published_date: datetime | None
 
@@ -34,7 +50,7 @@ class FeedScraper:
         self._queries = queries
         log.info("Feed scraper initialized.")
 
-    async def _insert_into_db(self, entries, url):
+    async def _insert_into_db(self, entries: list[FeedEntry], url):
         log.info(f"Updating feed: {url}")
         async with self._pool.acquire() as conn:
             for entry in entries:
@@ -43,15 +59,11 @@ class FeedScraper:
                     title=entry.title,
                     link=entry.link,
                     description=entry.description,
-                    published_date=entry.published_date,
-                    # title=entry["title"],
-                    # link=entry["link"],
-                    # description=entry["description"],
-                    # published_date=entry["published_date"],
+                    published_date=entry.published_date,  # unpacking ? **
                 )
         log.info(f"Updated feed: {url}")
 
-    def _parse_feed(self, feed_data) -> list[FeedEntry]:
+    def _parse_feed(self, feed_data: feedparser.FeedParserDict) -> list[FeedEntry]:
         entries = []
         for entry in feed_data.entries:
             entries.append(
@@ -62,45 +74,53 @@ class FeedScraper:
                     published_date=entry.get("published_parsed", " "),
                 ),
             )
-            # {
-            #     "title": entry.get("title", ""),
-            #     "link": entry.get("link", ""),
-            #     "description": entry.get("description", ""),
-            #     "published_date": entry.get("published_parsed", " "),
-            # }
-        # )
         return entries
 
-    async def _fetch_and_insert(self, session, url):
-        log.info("Attempting to fetch: %s", url)
+    async def _fetch_and_insert(self, session: ClientSession, feed: Feed):
+        # print(feed)
+        log.info("Attempting to fetch: %s", feed.feed_url)
 
         headers = {"User-Agent": USER_AGENT}
 
-        # if etag:
-        #     headers["If-None-Match"] = etag
-        # if last_modified:
-        #     headers["If-Modified-Since"] = last_modified
+        if feed.etag:
+            headers["If-None-Match"] = feed.etag
+        if feed.modified_header:
+            headers["If-Modified-Since"] = feed.modified_header
+
+        #  print(headers)
 
         try:
             async with session.get(
-                url, raise_for_status=True, timeout=GET_TIMEOUT, headers=headers
+                feed.feed_url,
+                raise_for_status=True,
+                timeout=GET_TIMEOUT,
+                headers=headers,
             ) as response:
 
-                # if response.status == 304:
-                #     self._log.info("No updates to: %s", url)
-                #     return
+                if response.status == 304:
+                    log.info("No updates to: %s", feed.feed_url)
+                    return
 
                 feed_data = feedparser.parse(await response.text())
-                log.info("Fetched XML: %s", url)
+                log.info("Fetched XML: %s", feed.feed_url)
                 entries = self._parse_feed(feed_data)
-                await self._insert_into_db(entries, url)
+                await self._insert_into_db(entries, feed.feed_url)  # rename function.
 
-                # headers["etag"] = response.headers.get("ETag")
-                # headers["last_modified"] = response.headers.get("Last-Modified")
-                # await self._update_feed_info_in_db(url, headers)
+                etag = response.headers.get("ETag")
+                modified_header = response.headers.get("Last-Modified")
+                last_fetched = datetime.now()
+
+                async with self._pool.acquire() as conn:
+                    await self._queries.update_feed_info(
+                        conn,
+                        feed_url=feed.feed_url,
+                        etag=etag,
+                        modified_header=modified_header,
+                        last_fetched=last_fetched,
+                    )
 
         except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
-            log.error("Could not fetch feed: %s", url)
+            log.error("Could not fetch feed: %s", feed.feed_url)
 
     # async def _update_feed_info_in_db(self, url, headers):
     #     async with self._pool.acquire() as conn:
@@ -108,18 +128,14 @@ class FeedScraper:
 
     async def run_scraper(self):
 
-        # get the feeds from the feeds table:
-        # assign them to the self._feeds variable
+        async with self._pool.acquire() as conn:
+            feeds = [Feed(**feed) for feed in await self._queries.get_feeds(conn)]
 
-        # async with self._pool.acquire() as conn:
-        #     feeds = await self._queries.get_feeds(conn)
-
-        #     if not feeds:
-        #         self._log.info("No feeds found. Using default feeds.")
-        #         self._feeds = DEFAULT_FEEDS (read from feeds.csv here or call that function.)
+        if not feeds:
+            log.info("No feeds found.")
 
         async with ClientSession() as session:
-            tasks = [self._fetch_and_insert(session, feed) for feed in DEFAULT_FEEDS]
+            tasks = [self._fetch_and_insert(session, feed) for feed in feeds]
             await asyncio.gather(*tasks)
 
 

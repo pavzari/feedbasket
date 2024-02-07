@@ -1,6 +1,6 @@
 import asyncio
-import logging
 import contextlib
+import logging
 
 import aiosql
 import asyncpg
@@ -9,10 +9,14 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
 from feedbasket.config import FETCH_INTERVAL_SEC, LOG_LEVEL
-from feedbasket.database import close_db_pool, create_db_pool, create_schema
+from feedbasket.database import (
+    close_db_pool,
+    create_db_pool,
+    create_schema,
+    insert_default_feeds,
+)
+from feedbasket.filters import display_feed_url, display_publication_date
 from feedbasket.scraper import FeedScraper
-from feedbasket.filters import display_publication_date
-
 
 logging.basicConfig(level=LOG_LEVEL)
 log = logging.getLogger(__name__)
@@ -22,6 +26,7 @@ log = logging.getLogger(__name__)
 async def lifespan(app: FastAPI) -> None:
     await create_db_pool(app)
     await create_schema(app, queries)
+    # await insert_default_feeds(app, queries)
     asyncio.create_task(scrape_feeds(app.state.pool))
     yield
     await close_db_pool(app)
@@ -30,13 +35,14 @@ async def lifespan(app: FastAPI) -> None:
 app = FastAPI(lifespan=lifespan)
 queries = aiosql.from_path("./feedbasket/sql", "asyncpg")
 templates = Jinja2Templates(directory="./feedbasket/templates")
+
 templates.env.filters["display_publication_date"] = display_publication_date
+templates.env.filters["display_feed_url"] = display_feed_url
 
 
 async def scrape_feeds(db_pool: asyncpg.Pool) -> None:
     """Fetch and parse the feeds periodically."""
     scraper = FeedScraper(db_pool, queries)
-    await asyncio.sleep(3)
     while True:
         await scraper.run_scraper()
         await asyncio.sleep(FETCH_INTERVAL_SEC)

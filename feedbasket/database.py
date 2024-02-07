@@ -4,7 +4,7 @@ import aiosql
 import asyncpg
 from fastapi import FastAPI
 
-from feedbasket.config import DB_POOL_MAX, DB_POOL_MIN, DB_URI
+from feedbasket.config import DB_POOL_MAX, DB_POOL_MIN, DB_URI, DEFAULT_FEEDS
 
 log = logging.getLogger(__name__)
 
@@ -28,3 +28,10 @@ async def create_schema(app: FastAPI, queries: aiosql.from_path) -> None:
     pool = app.state.pool
     async with pool.acquire() as conn:
         await queries.create_entries_table(conn)
+
+
+async def insert_default_feeds(app: FastAPI, queries: aiosql.from_path) -> None:
+    pool = app.state.pool
+    async with pool.acquire() as conn:
+        for feed in DEFAULT_FEEDS:
+            await queries.insert_default_feeds(conn, feed_url=feed)
