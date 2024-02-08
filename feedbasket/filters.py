@@ -2,7 +2,7 @@ from datetime import datetime
 from urllib.parse import urlparse
 
 
-def display_publication_date(entry_date: datetime | None) -> str:
+def display_pub_date(entry_date: datetime | None) -> str:
     """Format the publication date to be more readable."""
     if entry_date is None:
         return ""
