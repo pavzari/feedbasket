@@ -2,7 +2,7 @@
 -- Entries
 -- Users
 -- Tags?
-
+DROP TABLE IF EXISTS feeds;
 CREATE TABLE IF NOT EXISTS feeds (
     feed_id SERIAL PRIMARY KEY,
     feed_url TEXT UNIQUE NOT NULL,

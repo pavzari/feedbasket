@@ -11,10 +11,10 @@ from fastapi.templating import Jinja2Templates
 
 from feedbasket import config
 from feedbasket.database import (
+    add_default_feeds,
     close_db_pool,
     create_db_pool,
     create_schema,
-    add_default_feeds,
 )
 from feedbasket.filters import display_feed_url, display_pub_date
 from feedbasket.scraper import FeedScraper
