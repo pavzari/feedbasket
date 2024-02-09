@@ -97,11 +97,16 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
     ]
     for path in COMMON_FEED_PATHS:
         feed_url = unquote(urljoin(url, path)).strip()
-        response = requests.get(
-            feed_url,
-            timeout=config.GET_TIMEOUT,
-            headers={"User-Agent": config.USER_AGENT},
-        )
+        try:
+            response = requests.get(
+                feed_url,
+                timeout=config.GET_TIMEOUT,
+                headers={"User-Agent": config.USER_AGENT},
+            )
+            response.raise_for_status()
+        except requests.exceptions.RequestException:
+            continue
+
         mime = response.headers.get("Content-Type", "").split(";")[0]
         if response.ok and mime.endswith("xml"):
             return feed_url, feed_title
