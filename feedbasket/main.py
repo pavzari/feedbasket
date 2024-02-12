@@ -24,7 +24,7 @@ log = logging.getLogger(__name__)
 
 
 @contextlib.asynccontextmanager
-async def lifespan(app: FastAPI) -> None:
+async def lifespan(app: FastAPI):
     await create_db_pool(app)
     await create_schema(app, queries)
     await add_default_feeds(app, queries)

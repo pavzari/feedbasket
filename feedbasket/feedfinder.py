@@ -52,11 +52,12 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
     for tag in OG_TAGS:
         og_tag = soup.find("meta", property=tag)
         if og_tag:
-            feed_title = og_tag["content"].strip()
+            feed_title = og_tag.text.strip()
 
-    title_tag = soup.find("title")
-    if title_tag:
-        feed_title = title_tag.text.strip()
+    if not feed_title:
+        title_tag = soup.find("title")
+        if title_tag:
+            feed_title = title_tag.text.strip()
 
     # Search for RSS/Atom feed in <link> tags:
 
@@ -112,4 +113,4 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
             return feed_url, feed_title
 
     log.error(f"Failed to find feed: {url}")
-    return None, feed_title
+    return None

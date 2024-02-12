@@ -3,6 +3,8 @@ import logging
 from datetime import datetime
 from time import mktime
 
+import time
+
 import aiosql
 import feedparser
 from aiohttp import ClientConnectorError, ClientResponseError, ClientSession
@@ -61,7 +63,8 @@ class FeedScraper:
                 )
         log.info(f"Updated feed: {url}")
 
-    def _parse_feed(self, feed_data: feedparser.FeedParserDict) -> list[FeedEntry]:
+    def _parse_feed(self, feed_xml: str) -> list[FeedEntry]:
+        feed_data = feedparser.parse(feed_xml)
         entries = []
         for entry in feed_data.entries:
             entries.append(
@@ -69,7 +72,9 @@ class FeedScraper:
                     title=entry.get("title", ""),
                     link=entry.get("link", ""),
                     description=entry.get("description", ""),
-                    published_date=entry.get("published_parsed", " "),
+                    published_date=entry.get(
+                        "published_parsed", entry.get("updated_parsed")
+                    ),
                 ),
             )
         return entries
@@ -96,9 +101,9 @@ class FeedScraper:
                     log.info("No updates to: %s", feed.feed_url)
                     return
 
-                feed_data = feedparser.parse(await response.text())
+                feed_xml = await response.text()
                 log.info("Fetched XML: %s", feed.feed_url)
-                entries = self._parse_feed(feed_data)
+                entries = self._parse_feed(feed_xml)
                 await self._update_feed(entries, feed.feed_url)
 
                 etag_header = response.headers.get("ETag")
@@ -133,6 +138,8 @@ class FeedScraper:
             log.info("No feeds found.")
             return
 
+        start_time = time.monotonic()
         async with ClientSession() as session:
             tasks = [self._fetch_feed(session, feed) for feed in feeds]
             await asyncio.gather(*tasks)
+            print("time: ", time.monotonic() - start_time)
