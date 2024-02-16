@@ -47,12 +47,13 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
 
     feed_title = None
 
-    OG_TAGS = ["og:title", "og:site_name", "og:description"]
+    OG_TAGS = ["og:title", "og:site_name"]  # "og:description"]
 
     for tag in OG_TAGS:
         og_tag = soup.find("meta", property=tag)
         if og_tag:
             feed_title = og_tag.text.strip()
+            break
 
     if not feed_title:
         title_tag = soup.find("title")
@@ -69,14 +70,15 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
         "application/atom",
         "application/rss",
         "application/rdf",
-        "text/atom+xml",
-        "text/rss+xml",
-        "text/rdf+xml",
-        "text/atom",
-        "text/rss",
-        "text/rdf",
-        "text/xml",
     ]
+
+    # "text/atom+xml",
+    # "text/rss+xml",
+    # "text/rdf+xml",
+    # "text/atom",
+    # "text/rss",
+    # "text/rdf",
+    # "text/xml",
 
     for type in FEED_LINK_MIME_TYPES:
         link = soup.find("link", type=type, href=True)

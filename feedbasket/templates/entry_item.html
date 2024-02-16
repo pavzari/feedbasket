@@ -1,0 +1,12 @@
+<div class="entry">
+    <h2><a href="{{ entry.link }}">{{ entry.title }}</a></h2>
+    <p class="metadata">
+        <span class="favicon">
+            <img src="https://www.google.com/s2/favicons?domain={{ entry.link | display_feed_url }}&sz=32" alt="Favicon">
+        </span>
+        <span class="source-url">{{ entry.link | display_feed_url }}</span> |
+        <span class="date">{{ entry.published_date | display_pub_date}}</span> |
+        <span class="author">{{ entry.author }}</span>
+        <button class="add-to-favorites">Add to Favorites</button>
+    </p>
+</div>

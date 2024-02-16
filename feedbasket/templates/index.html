@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script
+      src="https://unpkg.com/htmx.org@1.9.10"
+      integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+      crossorigin="anonymous">
+    </script>
+    <link rel="stylesheet" href="../static/style.css">
     <title>feedbasket</title>
-</head>
-<body>
+  </head>
+  <body>
+    <form hx-post="/find-feed" hx-target="#feed-form" hx-swap="innerHTML">
+      <label for="url">URL:</label>
+      <input type="url" id="url" name="url" required/>
+      <button type="submit">Find feed</button>
+    </form>
+    <div id="feed-form"></div>
+
+    <h2>Feeds:</h2>
     {% for entry in entries %}
-    <p><img src="https://www.google.com/s2/favicons?domain={{ entry.link | display_feed_url }}&sz=32"><a href="{{ entry.link }}">{{ entry.title }}</a> {{ entry.published_date | display_pub_date }} ({{ entry.link | display_feed_url }})</p>
+
+      {% include 'entry_item.html' %}
+
     {% endfor %}
-</body>
+    <script src="/static/modal.js"></script>
+  </body>
 </html>

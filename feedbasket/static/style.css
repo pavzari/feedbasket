@@ -1,0 +1,54 @@
+body {
+    font-family: Inter, sans-serif;
+}
+.entry {
+    margin-bottom: 10px;
+    border:1px solid black;
+    padding-left: 1rem;
+    margin: 0rem;
+}
+
+.entry h2 {
+    font-size: 1rem;
+    margin: 0rem;
+}
+
+.entry h2 a {
+    text-decoration: none;
+}
+
+.favicon {
+    display: flex;
+    align-items: center; /* Align the favicon vertically */
+}
+
+.favicon img {
+    width: 1.2rem;
+    height: 1.2rem; 
+    border-radius: 50%;
+    border: 1px solid black;
+    box-sizing: border-box; 
+}
+.metadata {
+    font-size: 0.8rem;
+    display:flex;
+    align-items: center;
+    margin-top: 0.2rem;
+    margin-bottom: 0.9rem;
+}
+
+.metadata span {
+    margin-right: 2px;
+}
+
+/* .add-to-favorites {
+    padding: 5px 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+}
+
+.add-to-favorites:hover {
+    background-color: #0056b3;
+} */
