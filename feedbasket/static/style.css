@@ -1,45 +1,104 @@
-body {
-    font-family: Inter, sans-serif;
+html {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+*,
+*:before,
+*:after {
+  box-sizing: inherit;
+}
+
+html,
+body {
+margin: 0;
+padding: 0;
+  font-family: Inter, sans-serif;
+  background-color: rgb(254 251 249/1);
+  /* background-color: #ededed; */
+}
+
+.wrapper {
+  display: flex;
+  min-height: 100vh;
+  align-items: flex-start;
+}
+
+.sticky {
+  position: sticky; /* if enabled will not repond to media query!!! */
+  top: 0;
+  width: 300px;
+  /* border: 2px solid red; */
+  padding: 10px;
+}
+
+header h2 {
+  font-family: Rosarivo, serif;
+  font-size: 2rem;
+  padding-left: 3rem;
+}
+.main {
+  flex: 1 0 0;
+  /* border: 10px solid gold; */
+  padding: 10px;
+}
+
 .entry {
-    margin-bottom: 10px;
-    border:1px solid black;
-    padding-left: 1rem;
-    margin: 0rem;
+  margin-bottom: 10px;
+  /* border:1px solid black; */
+  padding-left: 1rem;
+  margin: 0rem;
 }
 
 .entry h2 {
-    font-size: 1rem;
+    font-size:1rem;
+    font-weight:500;
     margin: 0rem;
 }
 
 .entry h2 a {
-    text-decoration: none;
+  text-decoration: none;
+  color: black;
 }
 
+.entry h2 a:hover {
+  color: rgb(117, 43, 43);
+}
+
+
 .favicon {
-    display: flex;
-    align-items: center; /* Align the favicon vertically */
+  display: flex;
+  align-items: center; /* Align the favicon vertically */
 }
 
 .favicon img {
-    width: 1.2rem;
-    height: 1.2rem; 
-    border-radius: 50%;
-    border: 1px solid black;
-    box-sizing: border-box; 
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  /* border: 1.5px solid rgb(94, 92, 92); */
+  margin-right: 0.2rem;
+  box-sizing: border-box;
 }
 .metadata {
-    font-size: 0.8rem;
-    display:flex;
-    align-items: center;
-    margin-top: 0.2rem;
-    margin-bottom: 0.9rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  margin-top: 0.2rem;
+  margin-bottom: 0.9rem;
+  color: rgb(94, 92, 92);
+  /* border: 1px solid black; */
 }
 
 .metadata span {
-    margin-right: 2px;
+  margin-right: 2px;
+  /* border : 1px solid black; */
 }
+
+@media screen AND (max-width:768px) {
+    .wrapper { flex-direction: column; }
+    .sticky { width: 100%; position: static; }
+  }
 
 /* .add-to-favorites {
     padding: 5px 10px;

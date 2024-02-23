@@ -33,8 +33,11 @@ class Feed(BaseModel):
 class FeedEntry(BaseModel):
     title: str
     link: str
+    author: str | None
     description: str
     published_date: datetime | None
+    summary: str | None
+    content: str | None
 
     @validator("published_date", pre=True, always=True)
     def parse_published_date(cls, value):
@@ -50,18 +53,25 @@ class FeedScraper:
         self._queries = queries
         log.info("Feed scraper initialized.")
 
-    async def _update_feed(self, entries: list[FeedEntry], url) -> None:
-        log.info(f"Updating feed: {url}")
+    async def _update_feed(
+        self, entries: list[FeedEntry], feed_url: str, feed_id: int
+    ) -> None:
+        log.info(f"Updating feed: {feed_url}")
         async with self._pool.acquire() as conn:
             for entry in entries:
                 await self._queries.insert_entry(
                     conn,
                     title=entry.title,
                     link=entry.link,
+                    author=entry.author,
                     description=entry.description,
-                    published_date=entry.published_date,  # unpacking ? **
+                    summary=entry.summary,
+                    content=entry.content,
+                    published_date=entry.published_date,
+                    feed_id=feed_id,
+                    # unpacking ? **
                 )
-        log.info(f"Updated feed: {url}")
+        log.info(f"Updated feed: {feed_url}")
 
     def _parse_feed(self, feed_xml: str) -> list[FeedEntry]:
         feed_data = feedparser.parse(feed_xml)
@@ -69,11 +79,18 @@ class FeedScraper:
         for entry in feed_data.entries:
             entries.append(
                 FeedEntry(
-                    title=entry.get("title", ""),
-                    link=entry.get("link", ""),
-                    description=entry.get("description", ""),
+                    title=entry.get("title"),
+                    link=entry.get("link"),
+                    description=entry.get("description"),
                     published_date=entry.get(
                         "published_parsed", entry.get("updated_parsed")
+                    ),
+                    author=entry.get("author"),
+                    summary=entry.get("summary"),
+                    content=(
+                        entry.get("content")[0].get("value")
+                        if entry.get("content")
+                        else None
                     ),
                 ),
             )
@@ -104,7 +121,7 @@ class FeedScraper:
                 feed_xml = await response.text()
                 log.info("Fetched XML: %s", feed.feed_url)
                 entries = self._parse_feed(feed_xml)
-                await self._update_feed(entries, feed.feed_url)
+                await self._update_feed(entries, feed.feed_url, feed.feed_id)
 
                 etag_header = response.headers.get("ETag")
                 modified_header = response.headers.get("Last-Modified")

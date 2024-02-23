@@ -1,12 +1,70 @@
 <div class="entry">
-    <h2><a href="{{ entry.link }}">{{ entry.title }}</a></h2>
-    <p class="metadata">
-        <span class="favicon">
-            <img src="https://www.google.com/s2/favicons?domain={{ entry.link | display_feed_url }}&sz=32" alt="Favicon">
-        </span>
-        <span class="source-url">{{ entry.link | display_feed_url }}</span> |
-        <span class="date">{{ entry.published_date | display_pub_date}}</span> |
-        <span class="author">{{ entry.author }}</span>
-        <button class="add-to-favorites">Add to Favorites</button>
+  <h2><a href="{{ entry.link }}">{{ entry.title }}</a></h2>
+  <p class="metadata">
+    <span class="favicon">
+      <img
+        src="https://www.google.com/s2/favicons?domain={{ entry.link | display_feed_url }}&sz=32"
+        alt="Favicon"
+      />
+    </span>
+    <span class="source-url">{{ entry.link | display_feed_url }}</span>
+
+    <span class="divider">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        xmlnsXlink="http://www.w3.org/1999/xlink"
+        aria-hidden="true"
+        role="img"
+        style="vertical-align: -0.15em"
+        width="1em"
+        height="1em"
+        viewBox="0 0 15 15">
+        <path
+          fill="currentColor"
+          fill-rule="evenodd"
+          d="M7.5 2a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-1 0v-10a.5.5 0 0 1 .5-.5"
+          clip-rule="evenodd">
+        </path>
+        </svg>
+    </span>
+
+    <span class="date">{{ entry.published_date | display_pub_date}}</span>
+
+    <span class="divider">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          xmlnsXlink="http://www.w3.org/1999/xlink"
+          aria-hidden="true"
+          role="img"
+          style="vertical-align: -0.15em"
+          width="1em"
+          height="1em"
+          viewBox="0 0 15 15">
+          <path
+            fill="currentColor"
+            fill-rule="evenodd"
+            d="M7.5 2a.5.5 0 0 1 .5.5v10a.5.5 0 0 1-1 0v-10a.5.5 0 0 1 .5-.5"
+            clip-rule="evenodd">
+          </path>
+          </svg>
+      </span>
+
+    <span class="author">{{ entry.author }}</span>
+    <p>
+      {% if entry.description %}
+        {{ entry.description|truncate(500) }}
+      {% endif %}
     </p>
+    <p>
+      {% if entry.summary %}
+        {{ entry.summary|truncate(500) }}
+      {% endif %}
+    </p>
+    <p>
+      {% if entry.content %}
+        {{ entry.content|truncate(500) }}
+      {% endif %}
+    </p>
+    <!-- <button class="add-to-favorites">Add to Favorites</button> -->
+  </p>
 </div>

@@ -8,23 +8,35 @@
       integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
       crossorigin="anonymous">
     </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rosarivo:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../static/style.css">
     <title>feedbasket</title>
   </head>
   <body>
-    <form hx-post="/find-feed" hx-target="#feed-form" hx-swap="innerHTML">
-      <label for="url">URL:</label>
-      <input type="url" id="url" name="url" required/>
-      <button type="submit">Find feed</button>
-    </form>
-    <div id="feed-form"></div>
+    <header><h2>feedbasket</h2></header>
 
-    <h2>Feeds:</h2>
-    {% for entry in entries %}
+    <div class="wrapper">
 
-      {% include 'entry_item.html' %}
+      <div class="sticky lside">
+        <form hx-post="/find-feed" hx-target="#feed-form" hx-swap="innerHTML">
+        <label for="url">URL:</label>
+        <input type="url" id="url" name="url" required/>
+        <button type="submit">Find feed</button>
+        </form>
+        <div id="feed-form"></div>
+      </div>
 
-    {% endfor %}
+      <div class="main">
+        {% for entry in entries %}
+          {% include 'entry_item.html' %}
+        {% endfor %}
+      </div>
+
+    </div>
+    
     <script src="/static/modal.js"></script>
   </body>
 </html>
+
