@@ -33,11 +33,6 @@ padding: 0;
   padding: 10px;
 }
 
-header h2 {
-  font-family: Rosarivo, serif;
-  font-size: 2rem;
-  padding-left: 3rem;
-}
 .main {
   flex: 1 0 0;
   /* border: 10px solid gold; */
@@ -100,14 +95,3 @@ header h2 {
     .sticky { width: 100%; position: static; }
   }
 
-/* .add-to-favorites {
-    padding: 5px 10px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    cursor: pointer;
-}
-
-.add-to-favorites:hover {
-    background-color: #0056b3;
-} */

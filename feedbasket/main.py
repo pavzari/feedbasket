@@ -4,7 +4,7 @@ import logging
 
 import aiosql
 import asyncpg
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -16,9 +16,9 @@ from feedbasket.database import (
     create_db_pool,
     create_schema,
 )
+from feedbasket.feedfinder import find_feed_url
 from feedbasket.filters import display_feed_url, display_pub_date
 from feedbasket.scraper import FeedScraper
-from feedbasket.feedfinder import find_feed_url
 
 logging.basicConfig(level=config.LOG_LEVEL)
 log = logging.getLogger(__name__)

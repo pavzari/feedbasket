@@ -1,0 +1,14 @@
+
+{
+    "name": "js-readability",
+    "version": "1.0.0",
+    "description": "Website content extraction using readability.js.",
+    "main": "extract-content.js",
+    "scripts": {},
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+      "@mozilla/readability": "^0.4.4",
+      "jsdom": "^22.1.0"
+    }
+  }
