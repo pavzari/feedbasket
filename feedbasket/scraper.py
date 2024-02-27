@@ -101,8 +101,12 @@ class FeedScraper:
             # cleaned_content = await extract_content_readability(entry_url)
 
             entry_url = entry.get("link")
-            cleaned_content = await extract_content_readability(entry_url)
+            loop = asyncio.get_running_loop()
+            cleaned_content = await loop.run_in_executor(
+                None, extract_content_readability, entry_url
+            )
 
+            cleaned_content = None
             entries.append(
                 FeedEntry(
                     entry_title=entry.get("title"),

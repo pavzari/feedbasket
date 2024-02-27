@@ -8,31 +8,34 @@ import logging
 log = logging.getLogger(__name__)
 
 
-async def extract_content_readability(url: str) -> str | None:
-    html = await fetch_content(url)
-
+def extract_content_readability(url: str) -> str | None:
+    # html = await fetch_content(url)
+    try:
+        r = requests.get(url, timeout=4, headers={"User-Agent": config.USER_AGENT})
+        r.raise_for_status()
+        html = r.text
+    except requests.exceptions.RequestException as errex:
+        return None
     if html is None:
         return None
-
-    loop = asyncio.get_event_loop()
-    return await loop.run_in_executor(None, clean_content, html)
+    return clean_content(html)
 
 
-async def fetch_content(url):
-    async with ClientSession() as session:
-        headers = {"User-Agent": config.USER_AGENT}
-        try:
-            async with session.get(
-                url,
-                raise_for_status=True,
-                timeout=config.GET_TIMEOUT,
-                headers=headers,
-            ) as response:
+# async def fetch_content(url):
+#     async with ClientSession() as session:
+#         headers = {"User-Agent": config.USER_AGENT}
+#         try:
+#             async with session.get(
+#                 url,
+#                 raise_for_status=True,
+#                 timeout=config.GET_TIMEOUT,
+#                 headers=headers,
+#             ) as response:
 
-                return await response.text()
-        except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
-            log.error("Could not fetch entry html: %s", url)
-            return None
+#                 return await response.text()
+#         except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError) as e:
+#             log.error("Could not fetch entry html: %s", url, e)
+#             return None
 
 
 def clean_content(html_content):
