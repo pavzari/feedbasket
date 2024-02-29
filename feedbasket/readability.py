@@ -1,52 +1,31 @@
-import asyncio
-import requests
-from bs4 import BeautifulSoup
-from feedbasket import config
-from aiohttp import ClientConnectorError, ClientResponseError, ClientSession
 import logging
+
+from aiohttp import ClientSession
+from bs4 import BeautifulSoup
+
+from feedbasket import config
 
 log = logging.getLogger(__name__)
 
 
-def extract_content_readability(url: str) -> str | None:
-    # html = await fetch_content(url)
-    try:
-        r = requests.get(url, timeout=4, headers={"User-Agent": config.USER_AGENT})
-        r.raise_for_status()
-        html = r.text
-    except requests.exceptions.RequestException as errex:
-        return None
-    if html is None:
-        return None
-    return clean_content(html)
+async def extract_content_readability(url):
+    async with ClientSession() as session:
+        headers = {"User-Agent": config.USER_AGENT}
+        try:
+            async with session.get(
+                url,
+                raise_for_status=True,
+                timeout=config.GET_TIMEOUT,
+                headers=headers,
+            ) as response:
 
+                html = await response.text()
+                soup = BeautifulSoup(html, "html.parser")
+                return soup.get_text()
 
-# async def fetch_content(url):
-#     async with ClientSession() as session:
-#         headers = {"User-Agent": config.USER_AGENT}
-#         try:
-#             async with session.get(
-#                 url,
-#                 raise_for_status=True,
-#                 timeout=config.GET_TIMEOUT,
-#                 headers=headers,
-#             ) as response:
-
-#                 return await response.text()
-#         except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError) as e:
-#             log.error("Could not fetch entry html: %s", url, e)
-#             return None
-
-
-def clean_content(html_content):
-    soup = BeautifulSoup(html_content, "html.parser")
-    for script in soup(["script", "style"]):
-        script.extract()
-    text = soup.get_text()
-    lines = (line.strip() for line in text.splitlines())
-    chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-    cleaned_text = " ".join(chunk for chunk in chunks if chunk)
-    return cleaned_text
+        except Exception as e:
+            log.error("Could not fetch entry html: %s", url, e)
+            return None
 
 
 #################################

@@ -162,3 +162,5 @@ cython_debug/
 notes.md
 test_feed.py
 feeds.txt
+node_modules
+package-lock.json

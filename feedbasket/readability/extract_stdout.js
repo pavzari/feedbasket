@@ -1,7 +1,7 @@
 const { Readability } = require("@mozilla/readability");
 const { JSDOM } = require("jsdom");
 
-// Usage: node extract_stdout.js <URL>
+// Usage: node extract_stdout.js <html>
 
 function extractContent(page) {
   const reader = new Readability(page.window.document);
@@ -15,7 +15,5 @@ if (!process.argv[2]) {
 }
 
 const html = process.argv[2];
-
 const page = new JSDOM(html);
-
 extractContent(page);

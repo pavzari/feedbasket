@@ -42,7 +42,7 @@ class FeedEntry(BaseModel):
     content: str | None
     published_date: datetime | None
     updated_date: datetime | None
-    cleaned_content: str | None
+    cleaned_content: Optional[str] = None
     # created_at: datetime
     # updated_at: datetime
 
@@ -77,6 +77,7 @@ class FeedScraper:
             for entry in entries:
                 await self._queries.insert_entry(
                     conn,
+                    feed_id=feed_id,
                     entry_title=entry.entry_title,
                     entry_url=entry.entry_url,
                     author=entry.author,
@@ -86,35 +87,65 @@ class FeedScraper:
                     cleaned_content=entry.cleaned_content,
                     published_date=entry.published_date,
                     updated_date=entry.updated_date,
-                    feed_id=feed_id,
-                    # unpacking ? **
                 )
         log.info(f"Updated feed: {feed_url}")
 
-    async def _parse_feed(self, feed_xml: str) -> list[FeedEntry]:
+    async def _update_feed_metadata(
+        self,
+        feed_url: str,
+        etag_header: str,
+        modified_header: str,
+        last_fetched: datetime,
+    ) -> None:
+        log.info("Updating feed metadata: %s", feed_url)
+        async with self._pool.acquire() as conn:
+            await self._queries.update_feed_meta(
+                conn,
+                feed_url=feed_url,
+                etag_header=etag_header,
+                modified_header=modified_header,
+                last_fetched=last_fetched,
+            )
+
+    async def _parse_feed(
+        self, feed_xml: str, last_fetched: datetime
+    ) -> list[FeedEntry]:
+
         feed_data = feedparser.parse(feed_xml)
+        # check for feed publication date here?
+        # some feeds dont have an published date
+        # also, updated feed will contain old entries
+
         entries = []
         for entry in feed_data.entries:
 
-            # call readability on link
-            # entry_url = entry.get("link")
-            # cleaned_content = await extract_content_readability(entry_url)
+            published = entry.get("published_parsed", entry.get("updated_parsed"))
 
-            entry_url = entry.get("link")
-            loop = asyncio.get_running_loop()
-            cleaned_content = await loop.run_in_executor(
-                None, extract_content_readability, entry_url
-            )
+            # skip if publication date is unavailable
+            if not published:
+                log.debug("Skipping entry: no publication date")
+                continue
 
+            try:
+                published_datetime = datetime.fromtimestamp(mktime(published))
+            except (ValueError, TypeError):
+                log.debug("Skipping entry: invalid publication date")
+                continue
+
+            # skip if last_fetched is not None and published before last fetch
+            if last_fetched is not None and published_datetime < last_fetched:
+                log.debug("Skipping entry due to being published before last fetch")
+                continue
+
+            # cleaned_content = await extract_content_readability(entry.get("link"))
             cleaned_content = None
+
             entries.append(
                 FeedEntry(
                     entry_title=entry.get("title"),
                     entry_url=entry.get("link"),
                     author=entry.get("author"),
-                    published_date=entry.get(
-                        "published_parsed", entry.get("updated_parsed")
-                    ),
+                    published_date=published_datetime,
                     updated_date=entry.get("updated_parsed"),
                     cleaned_content=cleaned_content,
                     description=entry.get("description"),
@@ -128,7 +159,9 @@ class FeedScraper:
             )
         return entries
 
-    async def _fetch_feed(self, session: ClientSession, feed: Feed) -> None:
+    async def _fetch_feed(
+        self, session: ClientSession, feed: Feed
+    ) -> Optional[tuple] | None:
         log.info("Attempting to fetch: %s", feed.feed_url)
 
         headers = {"User-Agent": config.USER_AGENT}
@@ -153,47 +186,46 @@ class FeedScraper:
                 etag_header = response.headers.get("ETag")
                 modified_header = response.headers.get("Last-Modified")
                 feed_xml = await response.text()
-                log.info("Fetched XML: %s", feed.feed_url)
 
-                entries = await self._parse_feed(feed_xml)
-                # loop = asyncio.get_event_loop()
-                # entries = await loop.run_in_executor(None, self._parse_feed, feed_xml)
-
-                await self._update_feed(entries, feed.feed_url, feed.feed_id)
-
-                await self._update_feed_metadata(
-                    feed.feed_url,
-                    etag_header,
-                    modified_header,
-                    last_fetched=datetime.now(),
-                )
+                return feed_xml, etag_header, modified_header
 
         except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
             log.error("Could not fetch feed: %s", feed.feed_url)
+            return
 
-    async def _update_feed_metadata(
-        self, feed_url, etag_header, modified_header, last_fetched
-    ) -> None:
-        log.info("Updating feed metadata: %s", feed_url)
-        async with self._pool.acquire() as conn:
-            await self._queries.update_feed_meta(
-                conn,
-                feed_url=feed_url,
-                etag_header=etag_header,
-                modified_header=modified_header,
-                last_fetched=last_fetched,
-            )
+    async def _scrape_feed(self, session: ClientSession, feed: Feed) -> None:
+
+        feed_data = await self._fetch_feed(session, feed)
+        if not feed_data:
+            return
+
+        feed_xml, etag_header, modified_header = feed_data
+
+        log.debug("Parsing feed: %s", feed.feed_url)
+        entries = await self._parse_feed(feed_xml, feed.last_fetched)
+        print(len(entries))
+        # what if entries is empty? Do we want to update feed and metadata?
+        if not entries:
+            return
+
+        await self._update_feed(entries, feed.feed_url, feed.feed_id)
+        await self._update_feed_metadata(
+            feed.feed_url,
+            etag_header,
+            modified_header,
+            last_fetched=datetime.now(),  # Rename this to last_updated!
+        )
 
     async def run_scraper(self) -> None:
         async with self._pool.acquire() as conn:
             feeds = [Feed(**feed) for feed in await self._queries.get_feeds(conn)]
 
         if not feeds:
-            log.info("No feeds found.")
+            log.info("No feeds to scrape.")
             return
 
         start_time = time.monotonic()
         async with ClientSession() as session:
-            tasks = [self._fetch_feed(session, feed) for feed in feeds]
+            tasks = [self._scrape_feed(session, feed) for feed in feeds]
             await asyncio.gather(*tasks)
-            print("time: ", time.monotonic() - start_time)
+        print("time: ", time.monotonic() - start_time)
