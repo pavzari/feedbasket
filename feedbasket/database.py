@@ -40,7 +40,7 @@ async def create_schema(app: FastAPI, queries: aiosql.from_path) -> None:
 async def add_default_feeds(app: FastAPI, queries: aiosql.from_path) -> None:
     pool = app.state.pool
 
-    with open("feeds.txt", "r") as file:
+    with open("feeds.txt") as file:
         feed_urls = [line.strip() for line in file]
 
     async with pool.acquire() as conn:

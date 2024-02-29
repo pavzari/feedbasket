@@ -3,7 +3,6 @@ import logging
 import time
 from datetime import datetime
 from time import mktime
-
 from typing import Optional
 
 import aiosql
@@ -13,6 +12,7 @@ from asyncpg import Pool
 from pydantic import BaseModel, validator
 
 from feedbasket import config
+from feedbasket.decorators import RetryLimitError, retry
 from feedbasket.readability import extract_content_readability
 
 log = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ class FeedScraper:
         modified_header: str,
         last_fetched: datetime,
     ) -> None:
-        log.info("Updating feed metadata: %s", feed_url)
+        log.info(f"Updating feed metadata: {feed_url}")
         async with self._pool.acquire() as conn:
             await self._queries.update_feed_meta(
                 conn,
@@ -123,18 +123,18 @@ class FeedScraper:
 
             # skip if publication date is unavailable
             if not published:
-                log.debug("Skipping entry: no publication date")
+                log.debug("Skipping entry: no publication date.")
                 continue
 
             try:
                 published_datetime = datetime.fromtimestamp(mktime(published))
             except (ValueError, TypeError):
-                log.debug("Skipping entry: invalid publication date")
+                log.debug("Skipping entry: invalid publication date.")
                 continue
 
             # skip if last_fetched is not None and published before last fetch
             if last_fetched is not None and published_datetime < last_fetched:
-                log.debug("Skipping entry due to being published before last fetch")
+                log.debug("Skipping duplicate entry.")
                 continue
 
             # cleaned_content = await extract_content_readability(entry.get("link"))
@@ -145,7 +145,7 @@ class FeedScraper:
                     entry_title=entry.get("title"),
                     entry_url=entry.get("link"),
                     author=entry.get("author"),
-                    published_date=published_datetime,
+                    published_date=published,
                     updated_date=entry.get("updated_parsed"),
                     cleaned_content=cleaned_content,
                     description=entry.get("description"),
@@ -159,10 +159,11 @@ class FeedScraper:
             )
         return entries
 
+    @retry(ClientResponseError, ClientConnectorError, asyncio.TimeoutError)
     async def _fetch_feed(
         self, session: ClientSession, feed: Feed
     ) -> Optional[tuple] | None:
-        log.info("Attempting to fetch: %s", feed.feed_url)
+        log.info(f"Attempting to fetch: {feed.feed_url}")
 
         headers = {"User-Agent": config.USER_AGENT}
 
@@ -171,42 +172,48 @@ class FeedScraper:
         if feed.modified_header:
             headers["If-Modified-Since"] = feed.modified_header
 
-        try:
-            async with session.get(
-                feed.feed_url,
-                raise_for_status=True,
-                timeout=config.GET_TIMEOUT,
-                headers=headers,
-            ) as response:
+        async with session.get(
+            feed.feed_url,
+            raise_for_status=True,
+            timeout=config.GET_TIMEOUT,
+            headers=headers,
+        ) as response:
 
-                if response.status == 304:
-                    log.info("No updates to: %s", feed.feed_url)
-                    return
+            if response.status == 304:
+                log.info(f"No updates to: {feed.feed_url}")
+                return
 
-                etag_header = response.headers.get("ETag")
-                modified_header = response.headers.get("Last-Modified")
-                feed_xml = await response.text()
+            etag_header = response.headers.get("ETag")
+            modified_header = response.headers.get("Last-Modified")
+            feed_xml = await response.text()
 
-                return feed_xml, etag_header, modified_header
-
-        except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
-            log.error("Could not fetch feed: %s", feed.feed_url)
-            return
+            return feed_xml, etag_header, modified_header
 
     async def _scrape_feed(self, session: ClientSession, feed: Feed) -> None:
 
-        feed_data = await self._fetch_feed(session, feed)
+        try:
+            feed_data = await self._fetch_feed(session, feed)
+        except RetryLimitError:
+            log.error(f"Could not fetch feed: {feed.feed_url}")
+            # update feed error count in the db here.
+            return
+
         if not feed_data:
             return
 
         feed_xml, etag_header, modified_header = feed_data
 
-        log.debug("Parsing feed: %s", feed.feed_url)
+        log.debug(f"Parsing feed: {feed.feed_url}")
         entries = await self._parse_feed(feed_xml, feed.last_fetched)
         print(len(entries))
         # what if entries is empty? Do we want to update feed and metadata?
         if not entries:
             return
+
+        ########## additions
+        # tasks = [extract_content_readability(entry.entry_url) for entry in entries]
+        # cleaned_contents = await asyncio.gather(*tasks)
+        # print(len(cleaned_contents))
 
         await self._update_feed(entries, feed.feed_url, feed.feed_id)
         await self._update_feed_metadata(
