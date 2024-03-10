@@ -4,14 +4,14 @@ CREATE TABLE IF NOT EXISTS feeds (
     feed_id SERIAL PRIMARY KEY,
     feed_url TEXT UNIQUE NOT NULL,
     feed_name TEXT, -- NOT NULL
-    last_fetched TIMESTAMP,
+    last_updated TIMESTAMP,
     feed_type TEXT,
     feed_tags TEXT, -- Category?
     icon_url TEXT,
     etag_header TEXT,
-    modified_header TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    last_modified_header TEXT,
+    parsing_error_count INT DEFAULT 0, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 DROP TABLE IF EXISTS entries;
@@ -28,7 +28,6 @@ CREATE TABLE entries (
     cleaned_content TEXT,
     is_favourite BOOLEAN,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     feed_id INT REFERENCES feeds (feed_id)
 
     -- viewed BOOLEAN,

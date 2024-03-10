@@ -23,11 +23,10 @@ def retry(
 ) -> callable:
     """Decorator that retries an async function through specified exceptions.
 
-    exceptions (Tuple[Exception]) : The exceptions expected during function execution.
-    retries (int): Number of retries of function execution.
-    wait (int): Seconds to wait before retry.
-    emit_log (bool): Log unsuccessful attempts.
-    """
+    exceptions: The exceptions that will trigger the retry.
+    retries: Number of retries of function execution.
+    wait: Seconds to wait before retry.
+    emit_log: Log unsuccessful attempts."""
 
     def wrap(func):
         @wraps(func)
@@ -37,13 +36,13 @@ def retry(
             while True:
                 try:
                     response = await func(*args, **kwargs)
-                except exceptions as err:
+                except exceptions as e:
                     retries_count += 1
                     msg = f"Exception during {func} execution. {retries_count} of {retries} retries attempted."
 
                     if retries_count >= retries:
                         emit_log and log.warning(msg)
-                        raise RetryLimitError(func.__qualname__, args, kwargs) from err
+                        raise RetryLimitError(func.__name__, args, kwargs) from e
                     else:
                         emit_log and log.warning(msg)
 

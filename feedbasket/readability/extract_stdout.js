@@ -10,7 +10,7 @@ function extractContent(page) {
 }
 
 if (!process.argv[2]) {
-  console.error("Error: URL argument missing.");
+  console.error("Error: argument missing.");
   process.exit(1);
 }
 

@@ -45,32 +45,32 @@ from feedbasket import config
 log = logging.getLogger(__name__)
 
 
-async def extract_content_readability(url: str) -> str | None:
-    await install_npm_packages()
+async def extract_content_readability(session: ClientSession, url: str) -> str | None:
+    # await install_npm_packages()
 
-    async with ClientSession() as session:
-        headers = {"User-Agent": config.USER_AGENT}
+    # async with ClientSession() as session:
+    headers = {"User-Agent": config.USER_AGENT}
 
-        try:
-            async with session.get(
-                url,
-                raise_for_status=True,
-                timeout=config.GET_TIMEOUT,
-                headers=headers,
-            ) as response:
+    try:
+        async with session.get(
+            url,
+            raise_for_status=True,
+            timeout=config.GET_TIMEOUT,
+            headers=headers,
+        ) as response:
 
-                entry_html = await response.text()
+            entry_html = await response.text()
 
-                with ProcessPoolExecutor() as executor:
-                    loop = asyncio.get_event_loop()
-                    content = await loop.run_in_executor(
-                        executor, extract_content, entry_html
-                    )
-                    return content
-                # return await extract_content(entry_html)
+            with ProcessPoolExecutor() as executor:
+                loop = asyncio.get_event_loop()
+                content = await loop.run_in_executor(
+                    executor, extract_content, entry_html
+                )
+                return content
+            # return await extract_content(entry_html)
 
-        except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
-            log.error("Could not fetch entry html: %s", url)
+    except (ClientResponseError, ClientConnectorError, asyncio.TimeoutError):
+        log.error("Could not fetch entry html: %s", url)
 
 
 async def check_node_installed() -> bool:

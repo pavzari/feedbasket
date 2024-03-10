@@ -20,6 +20,7 @@ from feedbasket.feedfinder import find_feed_url
 from feedbasket.filters import display_feed_url, display_pub_date
 from feedbasket.scraper import FeedScraper
 
+
 logging.basicConfig(level=config.LOG_LEVEL)
 log = logging.getLogger(__name__)
 
@@ -27,8 +28,8 @@ log = logging.getLogger(__name__)
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_db_pool(app)
-    await create_schema(app, queries)
-    await add_default_feeds(app, queries)
+    # await create_schema(app, queries)
+    # await add_default_feeds(app, queries)
     asyncio.create_task(scrape_feeds(app.state.pool))
     yield
     await close_db_pool(app)

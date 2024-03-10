@@ -2,7 +2,6 @@ import asyncio
 import logging
 import time
 from datetime import datetime
-from time import mktime
 from typing import Optional
 
 import aiosql
@@ -15,6 +14,8 @@ from feedbasket import config
 from feedbasket.decorators import RetryLimitError, retry
 from feedbasket.readability import extract_content_readability
 
+import threading
+
 log = logging.getLogger(__name__)
 
 
@@ -22,14 +23,14 @@ class Feed(BaseModel):
     feed_id: int
     feed_url: str
     feed_name: str | None
-    last_fetched: datetime | None
+    last_updated: datetime | None
     feed_type: str | None
-    feed_tags: list[str] | None  # separate table?
+    feed_tags: list[str] | None
     icon_url: str | None
     etag_header: str | None
-    modified_header: str | None
+    last_modified_header: str | None
+    parsing_error_count: int
     created_at: datetime
-    updated_at: datetime
 
 
 class FeedEntry(BaseModel):
@@ -44,12 +45,11 @@ class FeedEntry(BaseModel):
     updated_date: datetime | None
     cleaned_content: Optional[str] = None
     # created_at: datetime
-    # updated_at: datetime
 
     @staticmethod
     def parse_date(value):
         try:
-            return datetime.fromtimestamp(mktime(value))
+            return datetime.fromtimestamp(time.mktime(value))
         except (ValueError, TypeError):
             log.info("Could not parse date.")
             return None
@@ -81,9 +81,9 @@ class FeedScraper:
                     entry_title=entry.entry_title,
                     entry_url=entry.entry_url,
                     author=entry.author,
-                    description=entry.description,
                     summary=entry.summary,
                     content=entry.content,
+                    description=entry.description,
                     cleaned_content=entry.cleaned_content,
                     published_date=entry.published_date,
                     updated_date=entry.updated_date,
@@ -94,8 +94,8 @@ class FeedScraper:
         self,
         feed_url: str,
         etag_header: str,
-        modified_header: str,
-        last_fetched: datetime,
+        last_modified_header: str,
+        last_updated: datetime,
     ) -> None:
         log.info(f"Updating feed metadata: {feed_url}")
         async with self._pool.acquire() as conn:
@@ -103,37 +103,28 @@ class FeedScraper:
                 conn,
                 feed_url=feed_url,
                 etag_header=etag_header,
-                modified_header=modified_header,
-                last_fetched=last_fetched,
+                last_modified_header=last_modified_header,
+                last_updated=last_updated,
             )
 
-    async def _parse_feed(
-        self, feed_xml: str, last_fetched: datetime
-    ) -> list[FeedEntry]:
+    async def _update_feed_error_count(self, feed_id: int) -> None:
+        async with self._pool.acquire() as conn:
+            await self._queries.update_feed_error_count(conn, feed_id=feed_id)
 
+    def _parse_feed(self, feed_xml: str, last_updated: datetime) -> list[FeedEntry]:
         feed_data = feedparser.parse(feed_xml)
-        # check for feed publication date here?
-        # some feeds dont have an published date
-        # also, updated feed will contain old entries
-
         entries = []
+
         for entry in feed_data.entries:
-
-            published = entry.get("published_parsed", entry.get("updated_parsed"))
-
-            # skip if publication date is unavailable
-            if not published:
-                log.debug("Skipping entry: no publication date.")
-                continue
-
             try:
-                published_datetime = datetime.fromtimestamp(mktime(published))
+                published = entry.get("published_parsed", entry.get("updated_parsed"))
+                published_datetime = datetime.fromtimestamp(time.mktime(published))
             except (ValueError, TypeError):
                 log.debug("Skipping entry: invalid publication date.")
                 continue
 
-            # skip if last_fetched is not None and published before last fetch
-            if last_fetched is not None and published_datetime < last_fetched:
+            # skip if last_updated is not None and published before last fetch
+            if last_updated is not None and published_datetime < last_updated:
                 log.debug("Skipping duplicate entry.")
                 continue
 
@@ -169,8 +160,8 @@ class FeedScraper:
 
         if feed.etag_header:
             headers["If-None-Match"] = feed.etag_header
-        if feed.modified_header:
-            headers["If-Modified-Since"] = feed.modified_header
+        if feed.last_modified_header:
+            headers["If-Modified-Since"] = feed.last_modified_header
 
         async with session.get(
             feed.feed_url,
@@ -184,44 +175,48 @@ class FeedScraper:
                 return
 
             etag_header = response.headers.get("ETag")
-            modified_header = response.headers.get("Last-Modified")
+            last_modified_header = response.headers.get("Last-Modified")
             feed_xml = await response.text()
 
-            return feed_xml, etag_header, modified_header
+            return feed_xml, etag_header, last_modified_header
 
     async def _scrape_feed(self, session: ClientSession, feed: Feed) -> None:
-
         try:
             feed_data = await self._fetch_feed(session, feed)
+            if not feed_data:
+                return
+            feed_xml, etag_header, last_modified_header = feed_data
         except RetryLimitError:
             log.error(f"Could not fetch feed: {feed.feed_url}")
-            # update feed error count in the db here.
+            await self._update_feed_error_count(feed.feed_id)
             return
-
-        if not feed_data:
-            return
-
-        feed_xml, etag_header, modified_header = feed_data
 
         log.debug(f"Parsing feed: {feed.feed_url}")
-        entries = await self._parse_feed(feed_xml, feed.last_fetched)
-        print(len(entries))
+        loop = asyncio.get_event_loop()
+        entries = await loop.run_in_executor(
+            None, self._parse_feed, feed_xml, feed.last_updated
+        )
+        # entries = self._parse_feed(feed_xml, feed.last_updated)
         # what if entries is empty? Do we want to update feed and metadata?
         if not entries:
             return
-
-        ########## additions
-        # tasks = [extract_content_readability(entry.entry_url) for entry in entries]
-        # cleaned_contents = await asyncio.gather(*tasks)
-        # print(len(cleaned_contents))
 
         await self._update_feed(entries, feed.feed_url, feed.feed_id)
         await self._update_feed_metadata(
             feed.feed_url,
             etag_header,
-            modified_header,
-            last_fetched=datetime.now(),  # Rename this to last_updated!
+            last_modified_header,
+            last_updated=datetime.now(),
         )
+        # asyncio.create_task(self._update_feed(entries, feed.feed_url, feed.feed_id))
+        # asyncio.create_task(
+        #     self._update_feed_metadata(
+        #         feed.feed_url,
+        #         etag_header,
+        #         last_modified_header,
+        #         last_updated=datetime.now(),
+        #     )
+        # )
 
     async def run_scraper(self) -> None:
         async with self._pool.acquire() as conn:

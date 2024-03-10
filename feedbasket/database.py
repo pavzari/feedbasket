@@ -30,19 +30,19 @@ async def create_schema(app: FastAPI, queries: aiosql.from_path) -> None:
         await queries.create_schema(conn)
 
 
-# async def add_default_feeds(app: FastAPI, queries: aiosql.from_path) -> None:
-#     pool = app.state.pool
-#     async with pool.acquire() as conn:
-#         for feed in config.DEFAULT_FEEDS:
-#             await queries.insert_default_feeds(conn, feed_url=feed)
-
-
 async def add_default_feeds(app: FastAPI, queries: aiosql.from_path) -> None:
     pool = app.state.pool
-
-    with open("feeds.txt") as file:
-        feed_urls = [line.strip() for line in file]
-
     async with pool.acquire() as conn:
-        for feed in feed_urls:
+        for feed in config.DEFAULT_FEEDS:
             await queries.insert_default_feeds(conn, feed_url=feed)
+
+
+# async def add_default_feeds(app: FastAPI, queries: aiosql.from_path) -> None:
+#     pool = app.state.pool
+
+#     with open("feeds.txt") as file:
+#         feed_urls = [line.strip() for line in file]
+
+#     async with pool.acquire() as conn:
+#         for feed in feed_urls:
+#             await queries.insert_default_feeds(conn, feed_url=feed)
