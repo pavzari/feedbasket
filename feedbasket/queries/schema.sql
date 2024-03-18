@@ -19,14 +19,13 @@ CREATE TABLE entries (
     entry_id SERIAL PRIMARY KEY,
     entry_title TEXT NOT NULL,
     entry_url TEXT UNIQUE NOT NULL,
-    published_date TIMESTAMP,
-    updated_date TIMESTAMP,
     author TEXT,
     summary TEXT,
     content TEXT,
-    description TEXT,
+    published_date TIMESTAMP,
+    updated_date TIMESTAMP,
     cleaned_content TEXT,
-    is_favourite BOOLEAN,
+    is_favourite BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     feed_id INT REFERENCES feeds (feed_id)
 

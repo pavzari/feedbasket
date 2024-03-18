@@ -50,12 +50,14 @@
       </span>
 
     <span class="author">{{ entry.author if entry.author }}</span>
-    <p>
-      description:
-      {% if entry.description %}
-        {{ entry.description|truncate(500) }}
+    
+      {% if entry.is_favourite %}
+      <button class="favourite-btn" hx-delete="/feed/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Remove from Favorites</button>
+      {% else %}
+      <button class="favourite-btn" hx-post="/feed/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Add to Favorites</button>
       {% endif %}
-    </p>
+  
+    <!--
     <p>
       summary:
       {% if entry.summary %}
@@ -68,6 +70,20 @@
         {{ entry.content|truncate(500) }}
       {% endif %} 
     </p>
+   -->
+<!--    
+     <p>
+      summary:
+      {% if entry.summary %}
+        {{ entry.summary }}
+      {% endif %}
+    </p>  -->
+    <!-- <p>
+      content:
+      {% if entry.content %}
+        {{ entry.content }}
+      {% endif %} 
+    </p> -->
     <!-- <button class="add-to-favorites">Add to Favorites</button> -->
   </p>
 </div>

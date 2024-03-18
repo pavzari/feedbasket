@@ -10,16 +10,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from feedbasket import config
-from feedbasket.database import (
-    add_default_feeds,
-    close_db_pool,
-    create_db_pool,
-    create_schema,
-)
+from feedbasket.database import close_db_pool, init_db
 from feedbasket.feedfinder import find_feed_url
 from feedbasket.filters import display_feed_url, display_pub_date
+from feedbasket.models import FeedEntry
 from feedbasket.scraper import FeedScraper
-
 
 logging.basicConfig(level=config.LOG_LEVEL)
 log = logging.getLogger(__name__)
@@ -27,9 +22,7 @@ log = logging.getLogger(__name__)
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_db_pool(app)
-    # await create_schema(app, queries)
-    # await add_default_feeds(app, queries)
+    await init_db(app, queries)
     asyncio.create_task(scrape_feeds(app.state.pool))
     yield
     await close_db_pool(app)
@@ -46,6 +39,7 @@ templates.env.filters["display_feed_url"] = display_feed_url
 
 async def scrape_feeds(db_pool: asyncpg.Pool) -> None:
     """Fetch and parse the feeds periodically."""
+    await asyncio.sleep(1)
     scraper = FeedScraper(db_pool, queries)
     while True:
         await scraper.run_scraper()
@@ -55,11 +49,11 @@ async def scrape_feeds(db_pool: asyncpg.Pool) -> None:
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
     async with request.app.state.pool.acquire() as conn:
-        entries = await queries.get_entries(conn)
-    context = {
-        "request": request,
-        "entries": entries,
-    }
+        entries = [FeedEntry(**entry) for entry in await queries.get_entries(conn)]
+        context = {
+            "request": request,
+            "entries": entries,
+        }
     return templates.TemplateResponse("index.html", context)
 
 
@@ -92,3 +86,30 @@ async def save_feed(
     # use htmx here as well because otherwise need to redirect to home (or is this something I want?)
     # trigger fetch here for the feed in the background.
     return "Feed saved successfully!"
+
+
+@app.post("/feed/favourites/{entry_id}", response_class=HTMLResponse)
+async def mark_as_favorites(request: Request, entry_id: int):
+    async with request.app.state.pool.acquire() as conn:
+        await queries.mark_as_favourite(conn, entry_id)
+    return f'<button class="favorite-btn" hx-delete="/feed/favourites/{entry_id}" hx-swap="outerHTML">Remove from Favorites</button>'
+
+
+@app.delete("/feed/favourites/{entry_id}", response_class=HTMLResponse)
+async def unmark_as_favorites(request: Request, entry_id: int):
+    async with request.app.state.pool.acquire() as conn:
+        await queries.unmark_as_favourite(conn, entry_id)
+    return f'<button class="favorite-btn" hx-post="/feed/favourites/{entry_id}" hx-swap="outerHTML">Add to Favorites</button>'
+
+
+@app.get("/feed/favourites", response_class=HTMLResponse)
+async def get_favourites(request: Request):
+    async with request.app.state.pool.acquire() as conn:
+        entries = [
+            FeedEntry(**entry) for entry in await queries.get_favourite_entries(conn)
+        ]
+        context = {
+            "request": request,
+            "entries": entries,
+        }
+    return templates.TemplateResponse("index.html", context)

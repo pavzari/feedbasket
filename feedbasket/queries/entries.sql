@@ -2,7 +2,6 @@
 INSERT INTO entries (
     entry_title,
     entry_url,
-    description,
     published_date,
     updated_date,
     author,
@@ -13,7 +12,6 @@ INSERT INTO entries (
 ) VALUES (
     :entry_title,
     :entry_url,
-    :description,
     :published_date,
     :updated_date,
     :author,
@@ -26,3 +24,18 @@ ON CONFLICT (entry_url) DO NOTHING;
 -- name: get-entries
 SELECT * FROM entries
 ORDER BY published_date DESC;
+
+-- name: mark-as-favourite
+UPDATE entries
+SET is_favourite = TRUE
+WHERE entry_id = :entry_id
+
+-- name: unmark-as-favourite
+UPDATE entries
+SET is_favourite = FALSE
+WHERE entry_id = :entry_id
+
+-- name: get-favourite-entries
+SELECT * FROM entries
+WHERE is_favourite = TRUE
+ORDER BY published_date DESC
