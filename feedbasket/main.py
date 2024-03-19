@@ -4,8 +4,8 @@ import logging
 
 import aiosql
 import asyncpg
-from fastapi import FastAPI, Form, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, Form, Request, Header
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -88,21 +88,29 @@ async def save_feed(
     return "Feed saved successfully!"
 
 
-@app.post("/feed/favourites/{entry_id}", response_class=HTMLResponse)
+@app.post("/favourites/{entry_id}", response_class=HTMLResponse)
 async def mark_as_favorites(request: Request, entry_id: int):
     async with request.app.state.pool.acquire() as conn:
         await queries.mark_as_favourite(conn, entry_id)
-    return f'<button class="favorite-btn" hx-delete="/feed/favourites/{entry_id}" hx-swap="outerHTML">Remove from Favorites</button>'
+    return f'<button hx-delete="/favourites/{entry_id}" hx-swap="outerHTML">Remove from Favorites</button>'
 
 
-@app.delete("/feed/favourites/{entry_id}", response_class=HTMLResponse)
-async def unmark_as_favorites(request: Request, entry_id: int):
+@app.delete("/favourites/{entry_id}", response_class=HTMLResponse)
+async def unmark_as_favorites(
+    response: Response,
+    request: Request,
+    entry_id: int,
+    hx_current_url: str = Header(...),
+):
     async with request.app.state.pool.acquire() as conn:
         await queries.unmark_as_favourite(conn, entry_id)
-    return f'<button class="favorite-btn" hx-post="/feed/favourites/{entry_id}" hx-swap="outerHTML">Add to Favorites</button>'
+    if "favourites" in hx_current_url:
+        response.headers["HX-Retarget"] = "closest #feed-entry"
+        return ""
+    return f'<button hx-post="/favourites/{entry_id}" hx-swap="outerHTML">Add to Favourites</button>'
 
 
-@app.get("/feed/favourites", response_class=HTMLResponse)
+@app.get("/favourites", response_class=HTMLResponse)
 async def get_favourites(request: Request):
     async with request.app.state.pool.acquire() as conn:
         entries = [

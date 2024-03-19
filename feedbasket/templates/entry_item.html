@@ -1,5 +1,9 @@
-<div class="entry">
-  <h2><a href="{{ entry.entry_url }}">{{ entry.entry_title }}</a></h2>
+<div id="feed-entry" class="entry">
+
+  <h2>
+    <a href="{{ entry.entry_url }}">{{ entry.entry_title }}</a>
+  </h2>
+
   <p class="metadata">
     <span class="favicon">
       <img
@@ -51,12 +55,13 @@
 
     <span class="author">{{ entry.author if entry.author }}</span>
     
+    <span class="favourite-button">
       {% if entry.is_favourite %}
-      <button class="favourite-btn" hx-delete="/feed/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Remove from Favorites</button>
+      <button hx-delete="/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Remove from Favourites</button>
       {% else %}
-      <button class="favourite-btn" hx-post="/feed/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Add to Favorites</button>
+      <button hx-post="/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Add to Favourites</button>
       {% endif %}
-  
+    </span>
     <!--
     <p>
       summary:
@@ -72,7 +77,7 @@
     </p>
    -->
 <!--    
-     <p>
+    <p>
       summary:
       {% if entry.summary %}
         {{ entry.summary }}
@@ -84,6 +89,6 @@
         {{ entry.content }}
       {% endif %} 
     </p> -->
-    <!-- <button class="add-to-favorites">Add to Favorites</button> -->
+
   </p>
 </div>
