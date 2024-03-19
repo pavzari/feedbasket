@@ -1,13 +1,17 @@
-<div class="entry">
-  <h2><a href="{{ entry.link }}">{{ entry.title }}</a></h2>
+<div id="feed-entry" class="entry">
+
+  <h2>
+    <a href="{{ entry.entry_url }}">{{ entry.entry_title }}</a>
+  </h2>
+
   <p class="metadata">
     <span class="favicon">
       <img
-        src="https://www.google.com/s2/favicons?domain={{ entry.link | display_feed_url }}&sz=32"
+        src="https://www.google.com/s2/favicons?domain={{ entry.entry_url | display_feed_url }}&sz=32"
         alt="Favicon"
       />
     </span>
-    <span class="source-url">{{ entry.link | display_feed_url }}</span>
+    <span class="source-url">{{ entry.entry_url | display_feed_url }}</span>
 
     <span class="divider">
       <svg
@@ -49,22 +53,42 @@
           </svg>
       </span>
 
-    <span class="author">{{ entry.author }}</span>
-    <p>
-      {% if entry.description %}
-        {{ entry.description|truncate(500) }}
+    <span class="author">{{ entry.author if entry.author }}</span>
+    
+    <span class="favourite-button">
+      {% if entry.is_favourite %}
+      <button hx-delete="/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Remove from Favourites</button>
+      {% else %}
+      <button hx-post="/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Add to Favourites</button>
       {% endif %}
-    </p>
+    </span>
+    <!--
     <p>
+      summary:
       {% if entry.summary %}
         {{ entry.summary|truncate(500) }}
       {% endif %}
     </p>
     <p>
+      content:
       {% if entry.content %}
         {{ entry.content|truncate(500) }}
-      {% endif %}
+      {% endif %} 
     </p>
-    <!-- <button class="add-to-favorites">Add to Favorites</button> -->
+   -->
+<!--    
+    <p>
+      summary:
+      {% if entry.summary %}
+        {{ entry.summary }}
+      {% endif %}
+    </p>  -->
+    <!-- <p>
+      content:
+      {% if entry.content %}
+        {{ entry.content }}
+      {% endif %} 
+    </p> -->
+
   </p>
 </div>

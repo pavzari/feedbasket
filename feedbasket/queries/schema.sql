@@ -1,17 +1,17 @@
 -- name: create-schema#
-DROP TABLE IF EXISTS feeds;
+DROP TABLE IF EXISTS feeds CASCADE;
 CREATE TABLE IF NOT EXISTS feeds (
     feed_id SERIAL PRIMARY KEY,
     feed_url TEXT UNIQUE NOT NULL,
     feed_name TEXT, -- NOT NULL
-    last_fetched TIMESTAMP,
+    last_updated TIMESTAMP,
     feed_type TEXT,
-    feed_tags TEXT,
+    feed_tags TEXT, -- Category?
     icon_url TEXT,
     etag_header TEXT,
-    modified_header TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_modified_header TEXT,
+    parsing_error_count INT DEFAULT 0, 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 DROP TABLE IF EXISTS entries;
@@ -19,18 +19,18 @@ CREATE TABLE entries (
     entry_id SERIAL PRIMARY KEY,
     entry_title TEXT NOT NULL,
     entry_url TEXT UNIQUE NOT NULL,
-    content_short TEXT,
-    content_full TEXT,
     author TEXT,
-    publication_date TIMESTAMP,
-    last_fetched TIMESTAMP
+    summary TEXT,
+    content TEXT,
+    published_date TIMESTAMP,
+    updated_date TIMESTAMP,
+    cleaned_content TEXT,
+    is_favourite BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_favourite BOOLEAN,
-    --- viewed BOOLEAN,
     feed_id INT REFERENCES feeds (feed_id)
 
-    -- icon_url TEXT to display next to entry.
+    -- viewed BOOLEAN,
+    -- icon_url TEXT,
     -- updated TIMESTAMP,
 );
 
