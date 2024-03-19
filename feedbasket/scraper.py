@@ -148,22 +148,27 @@ class FeedScraper:
             await self._update_feed_error_count(feed.feed_id)
             return
 
+        # entries = self._parse_feed(feed_xml, feed.last_updated)
         log.debug(f"Parsing feed: {feed.feed_url}")
         loop = asyncio.get_running_loop()
         entries = await loop.run_in_executor(
             None, self._parse_feed, feed_xml, feed.last_updated
         )
-        # entries = self._parse_feed(feed_xml, feed.last_updated)
-        if not entries:
-            return
 
-        await self._update_feed(entries, feed.feed_url, feed.feed_id)
+        last_updated = feed.last_updated
+        if entries:
+            await self._update_feed(entries, feed.feed_url, feed.feed_id)
+            last_updated = datetime.now()
+
+        # Update etag/last-modified regardless of whether new entries are added
+        # to prevent parsing the feed again. Keep the last_updated unchanged.
         await self._update_feed_metadata(
             feed.feed_url,
             etag_header,
             last_modified_header,
-            last_updated=datetime.now(),  # utc?
+            last_updated=last_updated,
         )
+
         # asyncio.create_task(self._update_feed(entries, feed.feed_url, feed.feed_id))
         # asyncio.create_task(
         #     self._update_feed_metadata(
