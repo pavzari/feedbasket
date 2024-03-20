@@ -54,6 +54,7 @@ class FeedScraper:
                 etag_header=etag_header,
                 last_modified_header=last_modified_header,
                 last_updated=last_updated,
+                parsing_error_count=0,  # reset parsing error count
             )
 
     async def _update_feed_error_count(self, feed_id: int) -> None:
@@ -82,7 +83,7 @@ class FeedScraper:
 
             # skip if last_updated is not None and published before last fetch
             # mostly for feeds that ignore etag and last_modified
-            if last_updated is not None and published_datetime < last_updated:
+            if last_updated and published_datetime < last_updated:
                 log.debug("Skipping entry: duplicate.")
                 continue
 

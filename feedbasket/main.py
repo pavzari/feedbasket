@@ -4,7 +4,7 @@ import logging
 
 import aiosql
 import asyncpg
-from fastapi import FastAPI, Form, Request, Header
+from fastapi import FastAPI, Form, Header, Request
 from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -13,7 +13,7 @@ from feedbasket import config
 from feedbasket.database import close_db_pool, init_db
 from feedbasket.feedfinder import find_feed_url
 from feedbasket.filters import display_feed_url, display_pub_date
-from feedbasket.models import FeedEntry
+from feedbasket.models import Feed, FeedEntry
 from feedbasket.scraper import FeedScraper
 
 logging.basicConfig(level=config.LOG_LEVEL)
@@ -49,23 +49,39 @@ async def scrape_feeds(db_pool: asyncpg.Pool) -> None:
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request) -> HTMLResponse:
     async with request.app.state.pool.acquire() as conn:
+        entry_count = await queries.get_entry_count(conn)
         entries = [FeedEntry(**entry) for entry in await queries.get_entries(conn)]
         context = {
             "request": request,
             "entries": entries,
+            "entry_count": entry_count,
         }
     return templates.TemplateResponse("index.html", context)
 
 
-# pip install python-multipart
+@app.get("/feeds", response_class=HTMLResponse)
+async def get_feeds(request: Request):
+    async with request.app.state.pool.acquire() as conn:
+        feed_count = await queries.get_feed_count(conn)
+        inactive_feeds = await queries.get_inactive_feed_count(conn)
+        unreachable_feeds = await queries.get_unreachable_feed_count(conn)
+        feeds = [Feed(**entry) for entry in await queries.get_feeds(conn)]
+        context = {
+            "request": request,
+            "feeds": feeds,
+            "feed_count": feed_count,
+            "inactive_feeds": inactive_feeds,
+            "unreachable_feeds": unreachable_feeds,
+        }
+    return templates.TemplateResponse("feeds.html", context)
 
 
-@app.post("/find-feed", response_class=HTMLResponse)
+@app.post("/feeds/find", response_class=HTMLResponse)
 async def verify_feed(request: Request, url: str = Form(...)):
-
+    # pip install python-multipart
+    # error if feed not found or the url is not valid.
     if not find_feed_url(url):
-        return "Feed could not be found. Please try again."
-    # form should remain the same but with an error message displayed
+        return "Feed could not be found. Try base URL instead???"
 
     feed_url, feed_name = find_feed_url(url)
 
@@ -77,11 +93,24 @@ async def verify_feed(request: Request, url: str = Form(...)):
     return templates.TemplateResponse("add_feed.html", context)
 
 
-@app.post("/add-feed", response_class=HTMLResponse)
+@app.post("/feeds/add", response_class=HTMLResponse)
 async def save_feed(
-    feed_url: str = Form(...), feed_name: str = Form(...), category: str = Form(...)
+    request: Request,
+    feed_url: str = Form(...),
+    feed_name: str = Form(...),
+    feed_type: str = Form(None),
+    feed_tags: str = Form(None),
+    icon_url: str = Form(None),
 ):
-    print(feed_url, feed_name, category)
+    # extract form data from request object
+    # Error if feed already exists
+
+    async with request.app.state.pool.acquire() as conn:
+        await queries.add_feed(
+            conn, feed_url, feed_name, feed_type, feed_tags, icon_url
+        )
+
+    print(feed_url, feed_name)
     # Save the feed to the database
     # use htmx here as well because otherwise need to redirect to home (or is this something I want?)
     # trigger fetch here for the feed in the background.
@@ -113,11 +142,11 @@ async def unmark_as_favorites(
 @app.get("/favourites", response_class=HTMLResponse)
 async def get_favourites(request: Request):
     async with request.app.state.pool.acquire() as conn:
-        entries = [
-            FeedEntry(**entry) for entry in await queries.get_favourite_entries(conn)
-        ]
+        fav_count = await queries.get_favourite_count(conn)
+        entries = [FeedEntry(**entry) for entry in await queries.get_favourites(conn)]
         context = {
             "request": request,
             "entries": entries,
+            "fav_count": fav_count,
         }
-    return templates.TemplateResponse("index.html", context)
+    return templates.TemplateResponse("favourites.html", context)

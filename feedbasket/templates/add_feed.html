@@ -1,9 +1,8 @@
-<form action="/add-feed" method="post">
+<form action="/feeds/add" method="post">
   <label for="feed_url">Feed URL:</label>
   <input type="url" id="feed_url" name="feed_url" value="{{ feed_url }}" required/>
   <label for="feed_name">Feed Name:</label>
   <input type="text" id="feed_name" name="feed_name" value="{{ feed_name }}" />
-  <label for="category">Category:</label>
-  <input type="text" id="category" name="category" required/>
   <button type="submit">Save Feed</button>
+  <a href="/feeds" class="button">Cancel</a>
 </form>

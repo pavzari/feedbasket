@@ -35,7 +35,14 @@ UPDATE entries
 SET is_favourite = FALSE
 WHERE entry_id = :entry_id
 
--- name: get-favourite-entries
+-- name: get-favourites
 SELECT * FROM entries
 WHERE is_favourite = TRUE
 ORDER BY published_date DESC
+
+-- name: get-entry-count$
+SELECT COUNT(*) FROM entries;
+
+-- name: get-favourite-count$
+SELECT COUNT(*) FROM entries
+WHERE is_favourite = TRUE;
