@@ -48,3 +48,7 @@ SELECT COUNT(*)
 FROM feeds
 WHERE last_updated IS NULL
 ) as inactive_count;
+
+-- name: get_feed_by_url
+SELECT * FROM feeds
+WHERE feed_url = :feed_url;

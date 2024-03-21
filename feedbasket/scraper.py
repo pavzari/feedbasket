@@ -180,12 +180,20 @@ class FeedScraper:
         #     )
         # )
 
-    async def run_scraper(self) -> None:
+    async def run_scraper(self, url: str = None) -> None:
+
         async with self._pool.acquire() as conn:
-            feeds = [Feed(**feed) for feed in await self._queries.get_feeds(conn)]
-            if not feeds:
-                log.info("No feeds to scrape.")
-                return
+            if url:
+                feeds = [
+                    Feed(**feed)
+                    for feed in await self._queries.get_feed_by_url(conn, url)
+                ]
+            else:
+                feeds = [Feed(**feed) for feed in await self._queries.get_feeds(conn)]
+
+        if not feeds:
+            log.info("No feeds to scrape.")
+            return
 
         start_time = time.monotonic()
         async with ClientSession() as session:

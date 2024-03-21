@@ -110,6 +110,9 @@ async def save_feed(
             conn, feed_url, feed_name, feed_type, feed_tags, icon_url
         )
 
+    scraper = FeedScraper(request.app.state.pool, queries)
+    asyncio.create_task(scraper.run_scraper(feed_url))
+
     print(feed_url, feed_name)
     # Save the feed to the database
     # use htmx here as well because otherwise need to redirect to home (or is this something I want?)
