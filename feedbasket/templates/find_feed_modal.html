@@ -1,0 +1,33 @@
+<button class="find-feed-button">Add Feed</button>
+
+<dialog class="add-feed-modal" id="add-feed-modal">
+    <img id="indicator" class="htmx-indicator" src="../static/spinner.svg" />
+    <form class="form" method="dialog" hx-post="/feeds/find" hx-target="#feed-form" hx-swap="innerHTML" hx-indicator="#indicator" >
+        <input type="url" id="url" name="url" placeholder="Add Feed or Website URL" required />
+        <!-- <button type="submit" >Add feed</button> -->
+    </form>
+    <div id="feed-form"></div>
+    <!-- <button class="button close-button">close modal</button> -->
+  </dialog>
+
+<script>
+
+    const modal = document.getElementById("add-feed-modal");
+    const openModal = document.querySelector(".find-feed-button");
+    const closeModal = document.querySelector(".close-button");
+
+    openModal.addEventListener("click", () => {
+        modal.showModal();
+    });
+
+    // closeModal.addEventListener("click", () => {
+    //     modal.close();
+    // });
+
+    modal.addEventListener("click", (event) => {
+        if (event.target === modal) {
+            modal.close();
+        }
+    });
+
+</script>

@@ -95,7 +95,7 @@ nav a:visited {
 .favicon img {
   width: 1rem;
   height: 1rem;
-  border-radius: 50%;
+  border-radius: 15%;
   /* border: 1.5px solid rgb(94, 92, 92); */
   margin-right: 0.2rem;
   box-sizing: border-box;
@@ -119,3 +119,31 @@ nav a:visited {
     .wrapper { flex-direction: column; }
     .sticky { width: 100%; position: static; }
   }
+
+
+/* ////// initial just a text input box */
+
+
+  dialog {
+    border: none; /* Remove default border */
+    box-shadow: none; /* Remove default shadow */
+    background-color: white; /* Make background transparent */
+  }
+
+  dialog::backdrop {
+    background-color: rgba(0, 0, 0, 0.5); /* Make backdrop transparent */
+  }
+
+  /* dialog > div {
+    margin: 0; 
+  }
+
+  dialog input[type="text"] {
+
+    border: 1px solid #ccc; 
+    padding: 8px; 
+    font-size: 16px; 
+    width: 100%;
+  } */
+
+/* ///// */

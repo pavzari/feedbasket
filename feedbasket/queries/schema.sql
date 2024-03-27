@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS feeds (
     feed_name TEXT, -- NOT NULL
     last_updated TIMESTAMP,
     feed_type TEXT,
-    feed_tags TEXT, -- Category?
     icon_url TEXT,
     etag_header TEXT,
     last_modified_header TEXT,
@@ -32,6 +31,19 @@ CREATE TABLE entries (
     -- viewed BOOLEAN,
     -- icon_url TEXT,
     -- updated TIMESTAMP,
+);
+
+DROP TABLE IF EXISTS tags CASCADE;
+CREATE TABLE IF NOT EXISTS tags (
+    tag_id SERIAL PRIMARY KEY,
+    tag_name TEXT UNIQUE NOT NULL
+);
+
+DROP TABLE IF EXISTS feed_tags;
+CREATE TABLE IF NOT EXISTS feed_tags (
+    feed_id INT REFERENCES feeds (feed_id),
+    tag_id INT REFERENCES tags (tag_id),
+    PRIMARY KEY (feed_id, tag_id)
 );
 
 -- CREATE TABLE users (

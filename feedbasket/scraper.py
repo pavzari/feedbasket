@@ -65,6 +65,24 @@ class FeedScraper:
         feed_data = feedparser.parse(feed_xml)
         current_datetime_utc = datetime.utcnow()
 
+        # Some feeds have incorrect published date that does not match the lastest entry date.
+        # Can't use that to skip parsing the entries if the server ignores the etag and last-modified headers.
+        # Not much I can do about that at the moment.
+
+        # if feed_published := feed_data.feed.get("updated_parsed"):
+        #     feed_published_datetime = datetime.fromtimestamp(
+        #         time.mktime(feed_published)
+        #     )
+        #     if last_updated and feed_published_datetime < last_updated:
+        #         log.debug(f"Skipping feed: no new entries. {feed_data.feed.link}")
+        #         return
+
+        #     if (
+        #         current_datetime_utc - feed_published_datetime
+        #     ).days > config.SKIP_OLDER_THAN_DAYS:
+        #         log.debug(f"Skipping feed: too old., {feed_data.feed.link}")
+        #         return
+
         entries = []
         for entry in feed_data.entries:
             try:

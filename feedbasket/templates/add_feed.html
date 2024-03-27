@@ -1,8 +1,40 @@
-<form action="/feeds/add" method="post">
+<form action="/feeds/add" method="post" style="display: grid; grid-gap: 0.5rem">
   <label for="feed_url">Feed URL:</label>
-  <input type="url" id="feed_url" name="feed_url" value="{{ feed_url }}" required/>
+  <input type="url" name="feed_url" value="{{ feed_url }}" required/>
   <label for="feed_name">Feed Name:</label>
-  <input type="text" id="feed_name" name="feed_name" value="{{ feed_name }}" />
+  <input type="text" name="feed_name" value="{{ feed_name }}" />
+  <label for="new_name">New Tag:</label>
+  <input type="text" name="new_tag" />
+
+ <!-- checkboxes for available tags-->
+  {% for tag in tags %}
+  <label>
+    <input type="checkbox" name="tags" value="{{ tag.tag_name }}">
+    {{ tag.tag_name }}
+  </label>
+  {% endfor %}
+
   <button type="submit">Save Feed</button>
-  <a href="/feeds" class="button">Cancel</a>
+  <a href="/" class="button">Cancel</a>
 </form>
+
+
+<!-- <div>
+  <label for="feed-url">Feed</label>
+  <input type="text" id="feed-url" value="www.atlasobscura.com/feeds/latest" readonly>
+
+  <label for="new-tag">Tags</label>
+  <input type="text" id="new-tag" placeholder="+ New Tag">
+
+  <div>
+      <label>
+          <input type="checkbox" id="news-checkbox"> News
+      </label>
+      <label>
+          <input type="checkbox" id="tech-checkbox"> Tech
+      </label>
+  </div>
+
+  <button>Cancel</button>
+  <button>Add</button>
+</div> -->

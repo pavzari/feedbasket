@@ -26,7 +26,6 @@ class Feed(BaseModel):
     feed_name: str | None  #!
     last_updated: datetime | None
     feed_type: str | None
-    feed_tags: list[str] | None
     icon_url: str | None  #!
     etag_header: str | None
     last_modified_header: str | None
