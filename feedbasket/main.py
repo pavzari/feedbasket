@@ -29,9 +29,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-queries = aiosql.from_path(
-    "./feedbasket/queries", "aiosqlite"
-)  # driver if sqlite! #"aiosqlite"
+queries = aiosql.from_path("./feedbasket/queries", "asyncpg")
 templates = Jinja2Templates(directory="./feedbasket/templates")
 
 app.mount("/static", StaticFiles(directory="feedbasket/static"), name="static")

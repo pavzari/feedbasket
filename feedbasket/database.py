@@ -1,6 +1,4 @@
 import logging
-from abc import ABC, abstractmethod
-from typing import AsyncContextManager
 from contextlib import asynccontextmanager
 
 import aiosql
@@ -13,31 +11,6 @@ from feedbasket import config
 log = logging.getLogger(__name__)
 
 
-# class DatabaseConnection(ABC):
-#     """Abstract base class for database connection implementations."""
-
-#     @abstractmethod
-#     async def acquire(self) -> AsyncContextManager:
-#         """Acquire a database connection."""
-#         pass
-
-
-# class PostgresConnection(DatabaseConnection):
-#     """PostgreSQL connection pool."""
-
-#     def __init__(self, uri: str, min_size: int, max_size: int):
-#         self._pool = await asyncpg.create_pool(
-#             uri, min_size=min_size, max_size=max_size
-#         )
-
-#     # async def _create_pool(self):
-#     #     return await
-#     # log.info("Connected to %s.", config.DB_URI)
-
-#     async def acquire(self) -> AsyncContextManager:
-#         return self._pool.acquire()
-
-
 class SQLiteConnection:
     """AIOSQLite connection."""
 
@@ -45,7 +18,7 @@ class SQLiteConnection:
         self._db_path = db_path
 
     @asynccontextmanager
-    async def acquire(self) -> AsyncContextManager:
+    async def acquire(self):
         async with aiosqlite.connect(self._db_path) as conn:
             conn.row_factory = aiosqlite.Row
             yield conn
@@ -54,7 +27,7 @@ class SQLiteConnection:
 
 async def init_db(app: FastAPI, queries: aiosql.from_path) -> None:
     await create_db_pool(app)
-    await create_schema(app, queries)
+    # await create_schema(app, queries)
     await add_feeds(app, queries)
 
 
@@ -102,6 +75,6 @@ async def add_feeds(app: FastAPI, queries: aiosql.from_path) -> None:
 
 async def close_db_pool(app: FastAPI) -> None:
     # if isinstance(app.state.pool, PostgresConnection):
-    #     await app.state.pool._pool.close()  ### nasty!
+    #     await app.state.pool._pool.close()
     await app.state.pool.close()
     log.info("Connection to database closed.")
