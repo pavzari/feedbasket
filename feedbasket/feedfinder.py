@@ -14,6 +14,8 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
     """Attempt to find a feed URL from a webpage URL.
     Returns tuple of (feed_url, feed_title) or None if no feed found."""
 
+    url = url if url.startswith("http") else ("https://" + url)
+
     try:
         response = requests.get(
             url, timeout=config.GET_TIMEOUT, headers={"User-Agent": config.USER_AGENT}

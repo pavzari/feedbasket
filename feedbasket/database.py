@@ -1,12 +1,55 @@
 import logging
+from abc import ABC, abstractmethod
+from typing import AsyncContextManager
+from contextlib import asynccontextmanager
 
 import aiosql
+import aiosqlite
 import asyncpg
 from fastapi import FastAPI
 
 from feedbasket import config
 
 log = logging.getLogger(__name__)
+
+
+# class DatabaseConnection(ABC):
+#     """Abstract base class for database connection implementations."""
+
+#     @abstractmethod
+#     async def acquire(self) -> AsyncContextManager:
+#         """Acquire a database connection."""
+#         pass
+
+
+# class PostgresConnection(DatabaseConnection):
+#     """PostgreSQL connection pool."""
+
+#     def __init__(self, uri: str, min_size: int, max_size: int):
+#         self._pool = await asyncpg.create_pool(
+#             uri, min_size=min_size, max_size=max_size
+#         )
+
+#     # async def _create_pool(self):
+#     #     return await
+#     # log.info("Connected to %s.", config.DB_URI)
+
+#     async def acquire(self) -> AsyncContextManager:
+#         return self._pool.acquire()
+
+
+class SQLiteConnection:
+    """AIOSQLite connection."""
+
+    def __init__(self, db_path: str):
+        self._db_path = db_path
+
+    @asynccontextmanager
+    async def acquire(self) -> AsyncContextManager:
+        async with aiosqlite.connect(self._db_path) as conn:
+            conn.row_factory = aiosqlite.Row
+            yield conn
+            await conn.commit()
 
 
 async def init_db(app: FastAPI, queries: aiosql.from_path) -> None:
@@ -16,13 +59,24 @@ async def init_db(app: FastAPI, queries: aiosql.from_path) -> None:
 
 
 async def create_db_pool(app: FastAPI) -> None:
-    log.info("Connecting to %s.", config.DB_URI)
-    app.state.pool = await asyncpg.create_pool(
-        config.DB_URI,
-        min_size=config.DB_POOL_MIN,
-        max_size=config.DB_POOL_MAX,
-    )
-    log.info("Connection established.")
+    if config.DB_ENGINE == "postgresql":
+        app.state.pool = await asyncpg.create_pool(
+            config.PG_URI, min_size=config.PG_POOL_MIN, max_size=config.PG_POOL_MAX
+        )
+    elif config.DB_ENGINE == "sqlite":
+        app.state.pool = SQLiteConnection(config.SQLITE_PATH)
+    else:
+        raise ValueError(f"Unsupported database engine: {config.DB_ENGINE}")
+
+
+# async def create_db_pool(app: FastAPI) -> None:
+#     log.info("Connecting to %s.", config.DB_URI)
+#     app.state.pool = await asyncpg.create_pool(
+#         config.DB_URI,
+#         min_size=config.DB_POOL_MIN,
+#         max_size=config.DB_POOL_MAX,
+#     )
+#     log.info("Connection established.")
 
 
 async def create_schema(app: FastAPI, queries: aiosql.from_path) -> None:
@@ -47,5 +101,7 @@ async def add_feeds(app: FastAPI, queries: aiosql.from_path) -> None:
 
 
 async def close_db_pool(app: FastAPI) -> None:
+    # if isinstance(app.state.pool, PostgresConnection):
+    #     await app.state.pool._pool.close()  ### nasty!
     await app.state.pool.close()
     log.info("Connection to database closed.")

@@ -5,7 +5,7 @@ import logging
 import aiosql
 import asyncpg
 from fastapi import FastAPI, Form, Header, Request
-from fastapi.responses import HTMLResponse, Response, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -29,7 +29,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-queries = aiosql.from_path("./feedbasket/queries", "asyncpg")
+queries = aiosql.from_path(
+    "./feedbasket/queries", "aiosqlite"
+)  # driver if sqlite! #"aiosqlite"
 templates = Jinja2Templates(directory="./feedbasket/templates")
 
 app.mount("/static", StaticFiles(directory="feedbasket/static"), name="static")
@@ -153,7 +155,10 @@ async def save_feed(
 async def mark_as_favorites(request: Request, entry_id: int):
     async with request.app.state.pool.acquire() as conn:
         await queries.mark_as_favourite(conn, entry_id)
-    return f'<button hx-delete="/favourites/{entry_id}" hx-swap="outerHTML">Remove from Favorites</button>'
+    # return f'<button hx-delete="/favourites/{entry_id}" hx-swap="outerHTML">Remove from Favorites</button>'
+    return templates.TemplateResponse(
+        "svg_star_filled.html", {"request": request, "entry": {"entry_id": entry_id}}
+    )
 
 
 @app.delete("/favourites/{entry_id}", response_class=HTMLResponse)
@@ -168,7 +173,10 @@ async def unmark_as_favorites(
     if "favourites" in hx_current_url:
         response.headers["HX-Retarget"] = "closest #feed-entry"
         return ""
-    return f'<button hx-post="/favourites/{entry_id}" hx-swap="outerHTML">Add to Favourites</button>'
+    # return f'<button hx-post="/favourites/{entry_id}" hx-swap="outerHTML">Add to Favourites</button>'
+    return templates.TemplateResponse(
+        "svg_star_empty.html", {"request": request, "entry": {"entry_id": entry_id}}
+    )
 
 
 @app.get("/favourites", response_class=HTMLResponse)

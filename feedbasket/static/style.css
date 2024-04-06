@@ -115,24 +115,30 @@ nav a:visited {
   /* border : 1px solid black; */
 }
 
+/* .metadata img {
+  -webkit-filter: grayscale(1);
+  filter: grayscale(1);
+} */
+
 @media screen AND (max-width:768px) {
     .wrapper { flex-direction: column; }
     .sticky { width: 100%; position: static; }
   }
 
 
+
 /* ////// initial just a text input box */
 
-
+/* 
   dialog {
-    border: none; /* Remove default border */
-    box-shadow: none; /* Remove default shadow */
-    background-color: white; /* Make background transparent */
+    border: none;
+    box-shadow: none;
+    background-color: white; 
   }
 
   dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.5); /* Make backdrop transparent */
-  }
+    background-color: rgba(0, 0, 0, 0.5);
+  } */
 
   /* dialog > div {
     margin: 0; 
@@ -147,3 +153,45 @@ nav a:visited {
   } */
 
 /* ///// */
+
+.find-feed-group {
+  display: flex;
+  align-items: center;
+}
+
+.find-feed-group label {
+  font-size: 20px;
+}
+
+.add-feed-modal {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  width: 500px;
+  background-color: #ffffff;
+}
+
+.add-feed-modal::backdrop {
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.form input#url {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  /* border: 1px solid #ccc; */
+  border: none;
+  border-radius: 4px;
+  font-size: 24px;
+  outline: none;
+  font: inherit;
+}
+
+.fav-star {
+  width: 1.1em;
+  height: 1.1em;
+  vertical-align: -0.15em;
+  cursor: pointer;
+}
