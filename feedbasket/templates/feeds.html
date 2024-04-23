@@ -1,26 +1,20 @@
 {% extends "_layout.html" %} {% block content %}
 <div class="wrapper">
+
     <div class="sticky lside">
       <h1>Feeds({{ feed_count }})</h1>
     </div>
 
     <div class="main">
-
       <div>
         Following {{ feed_count }} feeds with {{ inactive_feeds }} inactive and {{ unreachable_feeds }}  unreachable.
       </div>
-
-        <form hx-post="/feeds/find" hx-target="#feed-form" hx-swap="innerHTML" >
-            <input type="url" id="url" name="url" required />
-            <button type="submit" hx-indicator="#indicator">Add feed</button>
-            <img id="indicator" class="htmx-indicator" src="../static/spinner.svg" />
-        </form>
-        <div id="feed-form"></div>
 
       {% for feed in feeds %}
        {% include 'feed_item.html' %}
       {% endfor %}
     </div>
+
   </div>
 {% endblock %}
 

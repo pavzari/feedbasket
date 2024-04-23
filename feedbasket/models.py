@@ -1,20 +1,33 @@
 import logging
 import time
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
 log = logging.getLogger(__name__)
 
 
-class NewFeed(BaseModel):
-    """Model for creating new feeds in the 'feeds' table."""
+class NewFeedForm(BaseModel):
+    """New feed form data model."""
+
+    #! return feed_type, icon_url from find_feed()
 
     feed_url: str
-    feed_name: str | None  #!
-    feed_type: str | None  #!
-    feed_tags: list[str] | None  #!
-    icon_url: str | None
+    feed_name: str
+    feed_type: Optional[str] = None
+    existing_tags: Optional[list[str] | str] = None
+    icon_url: Optional[str] = None
+    new_tag: Optional[str] = None
+
+    @field_validator("existing_tags", mode="after")
+    def existing_tags_to_list(cls, value):
+        if isinstance(value, str):
+            return [value]
+        elif isinstance(value, list):
+            return value
+        else:
+            return None
 
 
 class Feed(BaseModel):

@@ -15,6 +15,7 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
     Returns tuple of (feed_url, feed_title) or None if no feed found."""
 
     url = url if url.startswith("http") else ("https://" + url)
+    url = url.strip()
 
     try:
         response = requests.get(

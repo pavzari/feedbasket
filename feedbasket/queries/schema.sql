@@ -51,8 +51,8 @@ CREATE TABLE IF NOT EXISTS feed_tags (
     PRIMARY KEY (feed_id, tag_id)
 );
 
-CREATE TABLE users (
-    user_id SERIAL PRIMARY KEY,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT UNIQUE NOT NULL
-);
+-- CREATE TABLE users (
+--     user_id SERIAL PRIMARY KEY,
+--     email TEXT UNIQUE NOT NULL,
+--     password TEXT UNIQUE NOT NULL
+-- );

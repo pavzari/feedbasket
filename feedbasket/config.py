@@ -21,7 +21,6 @@ LOG_LEVEL = "DEBUG"
 GET_TIMEOUT = 10
 FETCH_INTERVAL_SEC = 1800
 SKIP_OLDER_THAN_DAYS = 60
-DB_ENGINE = "postgresql"
 PG_URI = "postgresql://pav:password@localhost/rss"
 PG_POOL_MIN = 5
 PG_POOL_MAX = 50

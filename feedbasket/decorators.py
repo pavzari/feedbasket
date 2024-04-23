@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from functools import wraps
+from typing import Callable
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ def retry(
     retries: int = 3,
     wait: int = 1,
     emit_log: bool = False,
-) -> callable:
+) -> Callable:
     """Decorator that retries an async function through specified exceptions.
 
     exceptions: The exceptions that will trigger the retry.

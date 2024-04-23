@@ -1,5 +1,4 @@
 <div id="feed-entry" class="entry">
-
   <h2>
     <a href="{{ entry.entry_url }}">{{ entry.entry_title }}</a>
   </h2>
@@ -17,29 +16,14 @@
 
     <span class="date">{{ entry.published_date | display_pub_date}}</span>
 
-    {% include "svg_meta_divider.html" %}
-
-    {% if entry.author %}
-      <span class="author">{{ entry.author}}</span>
-      {% include "svg_meta_divider.html" %}
-    {% endif %}
-
-    <!-- <span class="favourite-button">
-      {% if entry.is_favourite %}
-      <button hx-delete="/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Remove from Favourites</button>
-      {% else %}
-      <button hx-post="/favourites/{{ entry.entry_id }}" hx-swap="outerHTML">Add to Favourites</button>
-      {% endif %}
-    </span> -->
+    {% include "svg_meta_divider.html" %} {% if entry.author %}
+    <span class="author">{{ entry.author}}</span>
+    {% include "svg_meta_divider.html" %} {% endif %}
 
     <span class="favourite-star">
-      {% if entry.is_favourite %}
-          {% include "svg_star_filled.html" %}
-      {% else %}
-          {% include "svg_star_empty.html" %}
-      {% endif %}
+      {% if entry.is_favourite %} {% include "svg_star_filled.html" %} {% else
+      %} {% include "svg_star_empty.html" %} {% endif %}
     </span>
-    
 
     <!--
     <p>
@@ -55,19 +39,5 @@
       {% endif %} 
     </p>
    -->
-<!--    
-    <p>
-      summary:
-      {% if entry.summary %}
-        {{ entry.summary }}
-      {% endif %}
-    </p>  -->
-    <!-- <p>
-      content:
-      {% if entry.content %}
-        {{ entry.content }}
-      {% endif %} 
-    </p> -->
-
   </p>
 </div>

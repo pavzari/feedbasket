@@ -1,17 +1,22 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING
 
-import aiosql
 import feedparser
 from aiohttp import ClientConnectorError, ClientResponseError, ClientSession
-from asyncpg import Pool
 
 from feedbasket import config
 from feedbasket.decorators import RetryLimitError, retry
 from feedbasket.models import Feed, NewFeedEntry
+
+if TYPE_CHECKING:
+    from aiosql.queries import Queries
+    from asyncpg import Pool
+
 
 # from feedbasket.readability import extract_content_readability
 
@@ -20,7 +25,7 @@ log = logging.getLogger(__name__)
 
 
 class FeedScraper:
-    def __init__(self, pool: Pool, queries: aiosql.from_path):
+    def __init__(self, pool: Pool, queries: Queries):
         self._pool = pool
         self._queries = queries
         log.info("Feed scraper initialized.")
@@ -127,9 +132,7 @@ class FeedScraper:
         return entries
 
     @retry(ClientResponseError, ClientConnectorError, asyncio.TimeoutError)
-    async def _fetch_feed(
-        self, session: ClientSession, feed: Feed
-    ) -> Optional[tuple] | None:
+    async def _fetch_feed(self, session: ClientSession, feed: Feed) -> tuple | None:
         log.info(f"Attempting to fetch: {feed.feed_url}")
 
         headers = {"User-Agent": config.USER_AGENT}
@@ -198,7 +201,7 @@ class FeedScraper:
         #     )
         # )
 
-    async def run_scraper(self, url: str = None) -> None:
+    async def run_scraper(self, url: str | None = None) -> None:
 
         async with self._pool.acquire() as conn:
             if url:
