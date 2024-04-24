@@ -1,6 +1,9 @@
 <form action="/feeds/add" method="post" style="display: grid; grid-gap: 0.5rem">
   <label for="feed_url">Feed URL:</label>
-  <input type="url" name="feed_url" value="{{ feed_url }}" required />
+  <input type="url" name="feed_url" value="{{ feed_url }}" disabled />
+
+  <label for="feed_name">Feed Type:</label>
+  <input type="text" name="feed_type" value="{{ feed_type }}" disabled />
 
   <label for="feed_name">Feed Name:</label>
   <input type="text" name="feed_name" value="{{ feed_name }}" />

@@ -10,10 +10,7 @@ from feedbasket import config
 log = logging.getLogger(__name__)
 
 
-def find_feed_url(url: str) -> tuple[str, str] | None:
-    """Attempt to find a feed URL from a webpage URL.
-    Returns tuple of (feed_url, feed_title) or None if no feed found."""
-
+def request_for_content(url: str) -> requests.Response | None:
     url = url if url.startswith("http") else ("https://" + url)
     url = url.strip()
 
@@ -31,18 +28,30 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
             )
             return None
 
+        return response
+
     except requests.exceptions.RequestException as e:
         log.error(f"Failed to retrieve: {url}: {e}")
         return None
 
+
+def find_feed(url: str) -> tuple[str | None] | None:
+    """Attempt to find a feed URL from a webpage URL.
+    Returns tuple of (feed_url, feed_title) or None if no feed found."""
+
     # Assume provided URL is a feed URL:
+
+    response = request_for_content(url)
+    if not response:
+        return None
 
     feed_data = feedparser.parse(response.content)
     mime = response.headers.get("Content-Type", "").split(";")[0]
 
     if not feed_data.bozo and mime.endswith("xml"):
         feed_title = feed_data.feed.get("title")
-        return url, feed_title
+        feed_type = feed_data.get("version")
+        return url, feed_title, feed_type
 
     soup = BeautifulSoup(response.content, "lxml")
 
@@ -87,7 +96,10 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
         link = soup.find("link", type=type, href=True)
         if link:
             feed_url = unquote(urljoin(url, link["href"])).strip()
-            return feed_url, feed_title
+            if response := request_for_content(feed_url):
+                feed_data = feedparser.parse(response.content)
+                feed_type = feed_data.get("version")
+                return feed_url, feed_title, feed_type
 
     # Try common feed paths:
 
@@ -103,19 +115,12 @@ def find_feed_url(url: str) -> tuple[str, str] | None:
     ]
     for path in COMMON_FEED_PATHS:
         feed_url = unquote(urljoin(url, path)).strip()
-        try:
-            response = requests.get(
-                feed_url,
-                timeout=config.GET_TIMEOUT,
-                headers={"User-Agent": config.USER_AGENT},
-            )
-            response.raise_for_status()
-        except requests.exceptions.RequestException:
-            continue
-
-        mime = response.headers.get("Content-Type", "").split(";")[0]
-        if response.ok and mime.endswith("xml"):
-            return feed_url, feed_title
+        if response := request_for_content(feed_url):
+            mime = response.headers.get("Content-Type", "").split(";")[0]
+            if response.ok and mime.endswith("xml"):
+                feed_data = feedparser.parse(response.content)
+                feed_type = feed_data.get("version")
+                return feed_url, feed_title, feed_type
 
     log.error(f"Failed to find feed: {url}")
     return None

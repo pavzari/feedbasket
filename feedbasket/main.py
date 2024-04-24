@@ -19,7 +19,7 @@ from litestar.template.config import TemplateConfig
 
 from feedbasket import config
 from feedbasket.database import close_db_pool, init_db
-from feedbasket.feedfinder import find_feed_url
+from feedbasket.feedfinder import find_feed
 from feedbasket.filters import display_feed_url, display_pub_date
 from feedbasket.models import Feed, FeedEntry, NewFeedForm
 from feedbasket.scraper import FeedScraper
@@ -80,14 +80,13 @@ class FavouritesController(Controller):
             "svg_star_filled.html", context={"entry": {"entry_id": entry_id}}
         )
 
-    # htmx needs to be changed to put also delete requires a status code?
     @put(path="/{entry_id:int}")
     async def unmark_as_favorite(
         self,
         state: State,
         entry_id: int,
         request: HTMXRequest,
-    ) -> Response:  # ? or HTMXTemplate
+    ) -> Response | Template:
         print(request.htmx.current_url)
 
         async with state.pool.acquire() as conn:
@@ -142,10 +141,10 @@ class ManageFeedsController(Controller):
         data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Template:
         # error if feed not found or the url is not valid.
-        if not find_feed_url(data["url"]):
+        if not find_feed(data["url"]):
             return Response(content="Feed could not be found. Try base URL instead???")
 
-        feed_url, feed_name = find_feed_url(data["url"])
+        feed_url, feed_name, feed_type = find_feed(data["url"])
 
         async with state.pool.acquire() as conn:
             tags = await queries.get_all_tags(conn)
@@ -153,6 +152,7 @@ class ManageFeedsController(Controller):
                 "feed_url": feed_url,
                 "feed_name": feed_name,
                 "tags": tags,
+                "feed_type": feed_type,
             }
 
         return Template("add_feed.html", context=context)
@@ -166,9 +166,6 @@ class ManageFeedsController(Controller):
         # Error if feed already exists.
         # Handle single/multiple tags and also case sensitivity.
 
-        print("CHECKBOXES: ", data.existing_tags)
-        print("NEW TAG: ", data.new_tag)
-
         async with state.pool.acquire() as conn:
             await queries.add_feed(
                 conn,
@@ -178,7 +175,7 @@ class ManageFeedsController(Controller):
                 icon_url=data.icon_url,
             )
 
-            # add tags: combine checkeckboxes and new tag if present.
+            # combine checkeckboxes and new tag if present.
             all_tags = []
             if data.existing_tags:
                 all_tags.extend(data.existing_tags)
@@ -196,8 +193,7 @@ class ManageFeedsController(Controller):
         scraper = FeedScraper(state.pool, queries)
         await scraper.run_scraper(data.feed_url)
 
-        # use htmx here as well because otherwise need to redirect to home (or is this something I want?)
-        return Redirect(path="/")  # default 302 ???? or 303
+        return Redirect(path="/")
 
 
 app = Litestar(
