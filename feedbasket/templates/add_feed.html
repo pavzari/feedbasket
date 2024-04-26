@@ -1,4 +1,14 @@
 <form action="/feeds/add" method="post" style="display: grid; grid-gap: 0.5rem">
+  <span class="favicon">
+    {% if feed_icon %}
+    <img src="{{ feed_icon }}" />
+    {% else %}
+    <img
+      src="https://www.google.com/s2/favicons?domain={{ feed_url | display_feed_url }}&sz=32"
+    />
+    {% endif %}
+  </span>
+
   <label for="feed_url">Feed URL:</label>
   <input type="url" name="feed_url" value="{{ feed_url }}" disabled />
 

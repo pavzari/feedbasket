@@ -144,7 +144,7 @@ class ManageFeedsController(Controller):
         if not find_feed(data["url"]):
             return Response(content="Feed could not be found. Try base URL instead???")
 
-        feed_url, feed_name, feed_type = find_feed(data["url"])
+        feed_url, feed_name, feed_type, feed_icon = find_feed(data["url"])
 
         async with state.pool.acquire() as conn:
             tags = await queries.get_all_tags(conn)
@@ -153,6 +153,7 @@ class ManageFeedsController(Controller):
                 "feed_name": feed_name,
                 "tags": tags,
                 "feed_type": feed_type,
+                "feed_icon": feed_icon,
             }
 
         return Template("add_feed.html", context=context)
