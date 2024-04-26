@@ -15,8 +15,8 @@ FeedMetadata = tuple[str, str, str | None, str | None]
 def get_feed_metadata(feed_data: feedparser.FeedParserDict):
     feed_name = feed_data.feed.get("title")
     feed_type = feed_data.get("version")
-    feed_icon = feed_data.feed.get("icon")
-    return feed_name, feed_type, feed_icon
+    icon_url = feed_data.feed.get("icon")
+    return feed_name, feed_type, icon_url
 
 
 def get_feed_content(url: str) -> requests.Response | None:

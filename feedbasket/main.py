@@ -140,20 +140,23 @@ class ManageFeedsController(Controller):
         state: State,
         data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Template:
-        # error if feed not found or the url is not valid.
         if not find_feed(data["url"]):
             return Response(content="Feed could not be found. Try base URL instead???")
 
-        feed_url, feed_name, feed_type, feed_icon = find_feed(data["url"])
+        feed_url, feed_name, feed_type, icon_url = find_feed(data["url"])
 
         async with state.pool.acquire() as conn:
+            check = await queries.check_feed_exists(conn, feed_url=feed_url)
+            if check[0]["exists"]:
+                return Response(content="You already follow this feed.")
+
             tags = await queries.get_all_tags(conn)
             context = {
                 "feed_url": feed_url,
                 "feed_name": feed_name,
-                "tags": tags,
                 "feed_type": feed_type,
-                "feed_icon": feed_icon,
+                "icon_url": icon_url,
+                "tags": tags,
             }
 
         return Template("add_feed.html", context=context)
@@ -164,9 +167,6 @@ class ManageFeedsController(Controller):
         state: State,
         data: Annotated[NewFeedForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Redirect:
-        # Error if feed already exists.
-        # Handle single/multiple tags and also case sensitivity.
-
         async with state.pool.acquire() as conn:
             await queries.add_feed(
                 conn,

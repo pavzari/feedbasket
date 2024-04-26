@@ -26,6 +26,12 @@ INSERT INTO feeds
 VALUES (:feed_url, :feed_name, :feed_type, :icon_url)
 ON CONFLICT (feed_url) DO NOTHING;
 
+--name: check-feed-exists
+SELECT EXISTS(SELECT 1
+    FROM feeds 
+    WHERE feed_url = :feed_url
+);
+
 -- name: get-feed-count$
 SELECT COUNT(*) FROM feeds;
 

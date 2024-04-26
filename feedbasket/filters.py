@@ -1,5 +1,6 @@
 from datetime import datetime
 from urllib.parse import urlparse
+import tldextract
 
 
 def display_pub_date(entry_date: datetime | None) -> str:
@@ -23,7 +24,13 @@ def display_pub_date(entry_date: datetime | None) -> str:
         return entry_date.strftime("%b %Y")
 
 
-def display_feed_url(feed_url: str) -> str:
-    """Extract the main site URL from a feed URL."""
-    parsed_url = urlparse(feed_url)
-    return parsed_url.netloc.replace("www.", "")
+# def display_feed_url(feed_url: str) -> str:
+#    """Extract the main site URL from a feed URL."""
+#    parsed_url = urlparse(feed_url)
+#    return parsed_url.netloc.replace("www.", "")
+
+
+def display_feed_url(url: str) -> str:
+    extracted = tldextract.extract(url)
+    main_domain = extracted.domain + "." + extracted.suffix
+    return main_domain

@@ -7,21 +7,21 @@
       src="https://www.google.com/s2/favicons?domain={{ feed_url | display_feed_url }}&sz=32"
     />
     {% endif %}
+    <p>{{ feed_url }}</p>
   </span>
 
-  <label for="feed_url">Feed URL:</label>
-  <input type="url" name="feed_url" value="{{ feed_url }}" disabled />
-
-  <label for="feed_name">Feed Type:</label>
-  <input type="text" name="feed_type" value="{{ feed_type }}" disabled />
+  <!-- hidden feed meta passed to /feeds/add via the form -->
+  <input type="hidden" name="feed_url" value="{{ feed_url }}" />
+  <input type="hidden" name="feed_type" value="{{ feed_type }}" />
 
   <label for="feed_name">Feed Name:</label>
   <input type="text" name="feed_name" value="{{ feed_name }}" />
 
-  <label for="new_name">New Tag:</label>
+  <!-- add new tag-->
+  <label for="new_tag">New Tag:</label>
   <input type="text" name="new_tag" />
 
-  <!-- checkboxes for available tags-->
+  <!-- checkboxes for existing tags-->
   {% for tag in tags %}
   <label>
     <input type="checkbox" name="existing_tags" value="{{ tag.tag_name }}" />
@@ -30,25 +30,5 @@
   {% endfor %}
 
   <button type="submit">Save Feed</button>
-  <a href="/" class="button">Cancel</a>
+  <a href="/">Cancel</a>
 </form>
-
-<!-- <div>
-  <label for="feed-url">Feed</label>
-<input type="text" id="feed-url" value="{{ feed_url }} " readonly>
-
-  <label for="new-tag">Tags</label>
-  <input type="text" id="new-tag" placeholder="+ New Tag">
-
-  <div>
-      <label>
-          <input type="checkbox" id="news-checkbox"> News
-      </label>
-      <label>
-          <input type="checkbox" id="tech-checkbox"> Tech
-      </label>
-  </div>
-
-  <button>Cancel</button>
-  <button>Add</button>
-</div> -->
