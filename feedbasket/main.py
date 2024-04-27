@@ -140,10 +140,12 @@ class ManageFeedsController(Controller):
         state: State,
         data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Template | Response:
-        if not find_feed(data["url"]):
+        response = find_feed(data["url"])
+        if not response:
             return Response(content="Feed could not be found.")
 
-        feed_url, feed_name, feed_type, icon_url = find_feed(data["url"])
+        # TODO: multiple feeds available
+        feed_url, feed_name, feed_type, icon_url = response
 
         async with state.pool.acquire() as conn:
             check = await queries.check_feed_exists(conn, feed_url=feed_url)

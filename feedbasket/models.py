@@ -11,8 +11,6 @@ log = logging.getLogger(__name__)
 class NewFeedForm(BaseModel):
     """New feed form data model."""
 
-    #! return feed_type, icon_url from find_feed()
-
     feed_url: str
     feed_name: str
     feed_type: Optional[str] = None

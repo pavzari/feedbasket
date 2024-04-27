@@ -99,6 +99,8 @@ def find_feed(url: str) -> FeedMetadata | None:
 
     for type in FEED_LINK_MIME_TYPES:
         link = soup.find("link", type=type, href=True)
+        links = soup.findAll("link", type=type, href=True)
+        print("multiple feeds:", links)
         if link:
             feed_url = unquote(urljoin(url, link["href"])).strip()
             if response := get_feed_content(feed_url):
