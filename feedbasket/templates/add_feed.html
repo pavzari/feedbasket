@@ -1,7 +1,12 @@
-<form action="/feeds/add" method="post" style="display: grid; grid-gap: 0.5rem">
+<form
+  action="/feeds/add"
+  method="post"
+  id="add-new-feed"
+  style="display: grid; grid-gap: 0.5rem"
+>
   <span class="favicon">
-    {% if feed_icon %}
-    <img src="{{ feed_icon }}" />
+    {% if icon_url %}
+    <img src="{{ icon_url }}" />
     {% else %}
     <img
       src="https://www.google.com/s2/favicons?domain={{ feed_url | display_feed_url }}&sz=32"
@@ -14,12 +19,12 @@
   <input type="hidden" name="feed_url" value="{{ feed_url }}" />
   <input type="hidden" name="feed_type" value="{{ feed_type }}" />
 
-  <label for="feed_name">Feed Name:</label>
+  <label for="feed_name">Feed</label>
   <input type="text" name="feed_name" value="{{ feed_name }}" />
 
   <!-- add new tag-->
-  <label for="new_tag">New Tag:</label>
-  <input type="text" name="new_tag" />
+  <label for="new_tag">Tags</label>
+  <input type="text" name="new_tag" placeholder="+ New Tag" />
 
   <!-- checkboxes for existing tags-->
   {% for tag in tags %}
@@ -28,7 +33,7 @@
     {{ tag.tag_name }}
   </label>
   {% endfor %}
-
-  <button type="submit">Save Feed</button>
-  <a href="/">Cancel</a>
 </form>
+<p>Subscribe to the feed</p>
+<button type="submit" form="add-new-feed">Add</button>
+<button class="close-button">Cancel</button>

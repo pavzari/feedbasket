@@ -1,30 +1,33 @@
 const modal = document.getElementById("add-feed-modal");
 const openModal = document.querySelector(".find-feed-button");
-const closeModal = document.querySelector(".close-button");
 const feedForm = document.getElementById("feed-form");
 const findFeedUrlInput = document.getElementById("url");
 const findFeedForm = document.getElementById("find-feed-form");
 
-// return the modal to initial state upon closing.
+// Open the modal
+openModal.addEventListener("click", () => {
+    modal.showModal();
+});
+
+// Clear the modal forms upon closing.
 modal.addEventListener("close", () => {
     feedForm.innerHTML = "";
     findFeedUrlInput.value = "";
 });
 
-// clear any messages or the previous form details if
-// serching for another url
+// Clear error messages or add feed form if searching again.
 findFeedForm.addEventListener("submit", () => {
     feedForm.innerHTML = "";
 });
 
-openModal.addEventListener("click", () => {
-    modal.showModal();
+// Close modal button.
+modal.addEventListener("click", (event) => {
+    if (event.target.matches(".close-button")) {
+        modal.close();
+    }
 });
 
-// closeModal.addEventListener("click", () => {
-//     modal.close();
-// });
-
+// Clicking outside closes the modal.
 modal.addEventListener("click", (event) => {
     if (event.target === modal) {
         modal.close();

@@ -2,7 +2,7 @@
 
 <dialog class="add-feed-modal" id="add-feed-modal">
   <form
-    id = "find-feed-form"
+    id="find-feed-form"
     class="form"
     method="dialog"
     hx-post="/feeds/find"
@@ -12,12 +12,7 @@
   >
     <div class="find-feed-group">
       <label for="url">+Add</label>
-      <input
-        id="url"
-        name="url"
-        placeholder="Feed or Website URL"
-        required
-      /u>
+      <input id="url" name="url" placeholder="Feed or Website URL" required />
       <img id="indicator" class="htmx-indicator" src="../static/spinner.svg" />
     </div>
     <!-- <button type="submit" >Add feed</button> -->

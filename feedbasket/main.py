@@ -139,9 +139,9 @@ class ManageFeedsController(Controller):
         self,
         state: State,
         data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
-    ) -> Template:
+    ) -> Template | Response:
         if not find_feed(data["url"]):
-            return Response(content="Feed could not be found. Try base URL instead???")
+            return Response(content="Feed could not be found.")
 
         feed_url, feed_name, feed_type, icon_url = find_feed(data["url"])
 
