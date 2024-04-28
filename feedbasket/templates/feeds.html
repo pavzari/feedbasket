@@ -6,13 +6,22 @@
     </div>
 
     <div class="main">
-      <div>
-        Following {{ feed_count }} feeds with {{ inactive_feeds }} inactive and {{ unreachable_feeds }}  unreachable.
-      </div>
 
-      {% for feed in feeds %}
-       {% include 'feed_item.html' %}
-      {% endfor %}
+    <div>
+        <h2> Organize subscriptions </h2>
+        <p>Following {{ feed_count }} feeds with {{ inactive_feeds }} inactive and {{ unreachable_feeds }}  unreachable.</p> 
+    </div>
+
+    <div id="feeds-table">
+    <table>
+        <tbody>
+            {% for feed in feeds %}
+            {% include 'feed_item.html' %}
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
     </div>
 
   </div>

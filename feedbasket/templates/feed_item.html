@@ -1,5 +1,15 @@
-<div id="feed-item" class="feed-item">
-    <h2>
-        <a href="{{ feed.feed_url }}">{{ feed.feed_url }}</a>
-    </h2>
-</div>
+<tr>
+  <td class="favicon">
+    {% if feed.icon_url %}
+    <img src="{{ feed.icon_url }}" />
+    {% else %}
+    <img
+      src="https://www.google.com/s2/favicons?domain={{ feed.feed_url | display_feed_url }}&sz=32"
+    />
+    {% endif %}
+  </td>
+  <td>{{ feed.feed_name }}</td>
+  <td>{{ feed.feed_url | display_feed_url }}</td>
+  <td>{{ feed.last_updated | display_pub_date }}</td>
+  <td></td>
+</tr>

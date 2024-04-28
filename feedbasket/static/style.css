@@ -12,8 +12,8 @@ html {
 
 html,
 body {
-margin: 0;
-padding: 0;
+  margin: 0;
+  padding: 0;
   font-family: Inter, sans-serif;
   background-color: rgb(254 251 249/1);
   /* background-color: #ededed; */
@@ -72,9 +72,9 @@ nav a:visited {
 }
 
 .entry h2 {
-    font-size:1rem;
-    font-weight:500;
-    margin: 0rem;
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0rem;
 }
 
 .entry h2 a {
@@ -85,7 +85,6 @@ nav a:visited {
 .entry h2 a:hover {
   color: rgb(117, 43, 43);
 }
-
 
 .favicon {
   display: flex;
@@ -120,12 +119,15 @@ nav a:visited {
   filter: grayscale(1);
 } */
 
-@media screen AND (max-width:768px) {
-    .wrapper { flex-direction: column; }
-    .sticky { width: 100%; position: static; }
+@media screen AND (max-width: 768px) {
+  .wrapper {
+    flex-direction: column;
   }
-
-
+  .sticky {
+    width: 100%;
+    position: static;
+  }
+}
 
 /* ////// initial just a text input box */
 
@@ -140,7 +142,7 @@ nav a:visited {
     background-color: rgba(0, 0, 0, 0.5);
   } */
 
-  /* dialog > div {
+/* dialog > div {
     margin: 0; 
   }
 
