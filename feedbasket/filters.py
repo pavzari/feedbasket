@@ -1,5 +1,5 @@
-from datetime import datetime
-from urllib.parse import urlparse
+from datetime import datetime, timezone
+
 import tldextract
 
 
@@ -8,7 +8,7 @@ def display_pub_date(entry_date: datetime | None) -> str:
     if entry_date is None:
         return ""
 
-    delta = datetime.utcnow() - entry_date
+    delta = datetime.now(timezone.utc) - entry_date
 
     if delta.total_seconds() < 60:
         return f"{delta.seconds}s ago"

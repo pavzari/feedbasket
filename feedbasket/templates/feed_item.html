@@ -11,5 +11,12 @@
   <td>{{ feed.feed_name }}</td>
   <td>{{ feed.feed_url | display_feed_url }}</td>
   <td>{{ feed.last_updated | display_pub_date }}</td>
-  <td></td>
+  <td>
+    <a
+      hx-get="/subscriptions/{{ feed.feed_id }}/edit"
+      hx-push-url="true"
+      hx-target="#main"
+      >Edit</a
+    >
+  </td>
 </tr>

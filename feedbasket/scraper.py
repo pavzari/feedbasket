@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 import feedparser
@@ -68,7 +68,7 @@ class FeedScraper:
 
     def _parse_feed(self, feed_xml: str, last_updated: datetime) -> list[NewFeedEntry]:
         feed_data = feedparser.parse(feed_xml)
-        current_datetime_utc = datetime.utcnow()
+        current_datetime_utc = datetime.now(timezone.utc)
 
         # Some feeds have incorrect published date that does not match the lastest entry date.
         # Can't use that to skip parsing the entries if the server ignores the etag and last-modified headers.
@@ -92,7 +92,9 @@ class FeedScraper:
         for entry in feed_data.entries:
             try:
                 published = entry.get("published_parsed", entry.get("updated_parsed"))
-                published_datetime = datetime.fromtimestamp(time.mktime(published))
+                published_datetime = datetime.fromtimestamp(
+                    time.mktime(published), timezone.utc
+                )
             except (ValueError, TypeError):
                 log.debug("Skipping entry: invalid/no publication date.")
                 continue
@@ -180,7 +182,7 @@ class FeedScraper:
         last_updated = feed.last_updated
         if entries:
             await self._update_feed(entries, feed.feed_url, feed.feed_id)
-            last_updated = datetime.now()
+            last_updated = datetime.now(timezone.utc)
 
         # Update etag/last-modified regardless of whether new entries are added
         # to prevent parsing the feed again. Keep the last_updated unchanged.

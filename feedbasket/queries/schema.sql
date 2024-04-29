@@ -9,13 +9,13 @@ CREATE TABLE IF NOT EXISTS feeds (
     feed_id SERIAL PRIMARY KEY,
     feed_url TEXT UNIQUE NOT NULL,
     feed_name TEXT, -- NOT NULL
-    last_updated TIMESTAMP,
+    last_updated TIMESTAMPTZ,
     feed_type TEXT,
     icon_url TEXT,
     etag_header TEXT,
     last_modified_header TEXT,
     parsing_error_count INT DEFAULT 0, 
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 -- DROP TABLE IF EXISTS entries;
@@ -26,11 +26,11 @@ CREATE TABLE entries (
     author TEXT,
     summary TEXT,
     content TEXT,
-    published_date TIMESTAMP,
-    updated_date TIMESTAMP,
+    published_date TIMESTAMPTZ,
+    updated_date TIMESTAMPTZ,
     cleaned_content TEXT,
     is_favourite BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     feed_id INT REFERENCES feeds (feed_id)
 
     -- viewed BOOLEAN,

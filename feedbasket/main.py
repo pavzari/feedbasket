@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
@@ -23,6 +24,9 @@ from feedbasket.feedfinder import find_feed
 from feedbasket.filters import display_feed_url, display_pub_date
 from feedbasket.models import Feed, FeedEntry, NewFeedForm
 from feedbasket.scraper import FeedScraper
+
+log = logging.getLogger(__name__)
+logging.basicConfig(level=config.LOG_LEVEL)
 
 jinja_env = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"))
 jinja_env.filters.update(
@@ -115,8 +119,8 @@ class FavouritesController(Controller):
         return Template("favourites.html", context=context)
 
 
-class ManageFeedsController(Controller):
-    path = "/feeds"
+class SubscriptionsController(Controller):
+    path = "/subscriptions"
 
     @get()
     async def get_feeds(self, state: State) -> Template:
@@ -132,7 +136,7 @@ class ManageFeedsController(Controller):
                 "unreachable_feeds": unreachable_feeds,
             }
 
-        return Template("feeds.html", context=context)
+        return Template("subscriptions.html", context=context)
 
     @post(path="/find")
     async def find_feed(
@@ -161,7 +165,7 @@ class ManageFeedsController(Controller):
                 "tags": tags,
             }
 
-        return Template("add_feed.html", context=context)
+        return Template("feed_add.html", context=context)
 
     @post(path="/add")
     async def add_new_feed(
@@ -198,13 +202,23 @@ class ManageFeedsController(Controller):
 
         return Redirect(path="/")
 
+    @get(path="/{feed_id:int}/edit")
+    async def edit_feed(
+        self,
+        feed_id: int,
+        state: State,
+    ) -> Template:
+
+        context = {"feed_id": feed_id}
+        return Template("feed_edit.html", context=context)
+
 
 app = Litestar(
     lifespan=[lifespan],
     request_class=HTMXRequest,
     route_handlers=[
         FavouritesController,
-        ManageFeedsController,
+        SubscriptionsController,
         index,
         create_static_files_router(path="/static", directories=["./feedbasket/static"]),
     ],

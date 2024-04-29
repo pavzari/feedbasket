@@ -1,6 +1,6 @@
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, field_validator
@@ -61,7 +61,7 @@ class NewFeedEntry(BaseModel):
     @staticmethod
     def parse_date(value):
         try:
-            return datetime.fromtimestamp(time.mktime(value))
+            return datetime.fromtimestamp(time.mktime(value), timezone.utc)
         except (ValueError, TypeError):
             log.info("Could not parse date.")
             return None

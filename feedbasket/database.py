@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 
 async def init_db(app: Litestar, queries: Queries) -> None:
     await create_db_pool(app)
-    #  await create_schema(app, queries)
+    # await create_schema(app, queries)
     await add_feeds(app, queries)
 
 

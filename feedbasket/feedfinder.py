@@ -46,7 +46,9 @@ def find_feed(url: str) -> FeedMetadata | None:
 
     # Assume provided URL is a feed URL:
 
-    url = url.strip() if url.startswith("http") else ("https://" + url.strip())
+    url = url.strip()
+    url = url if url.startswith("http") else ("https://" + url)
+
     response = get_feed_content(url)
     if not response:
         return None
