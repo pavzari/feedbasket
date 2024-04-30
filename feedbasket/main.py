@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated
@@ -17,6 +16,7 @@ from litestar.params import Body
 from litestar.response import Redirect, Template
 from litestar.static_files import create_static_files_router
 from litestar.template.config import TemplateConfig
+from litestar.logging import LoggingConfig
 
 from feedbasket import config
 from feedbasket.database import close_db_pool, init_db
@@ -25,8 +25,6 @@ from feedbasket.filters import display_feed_url, display_pub_date
 from feedbasket.models import Feed, FeedEntry, NewFeedForm
 from feedbasket.scraper import FeedScraper
 
-log = logging.getLogger(__name__)
-logging.basicConfig(level=config.LOG_LEVEL)
 
 jinja_env = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"))
 jinja_env.filters.update(
@@ -213,6 +211,13 @@ class SubscriptionsController(Controller):
         return Template("feed_edit.html", context=context)
 
 
+logging_config = LoggingConfig(
+    root={"level": config.LOG_LEVEL, "handlers": ["console"]},
+    formatters={
+        "standard": {"format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"}
+    },
+)
+
 app = Litestar(
     lifespan=[lifespan],
     request_class=HTMXRequest,
@@ -223,4 +228,5 @@ app = Litestar(
         create_static_files_router(path="/static", directories=["./feedbasket/static"]),
     ],
     template_config=template_config,
+    logging_config=logging_config,
 )
