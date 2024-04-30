@@ -12,8 +12,16 @@ SET etag_header = :etag_header,
     parsing_error_count = :parsing_error_count
 WHERE feed_url = :feed_url;
 
--- name: get-feeds
+-- name: get-all-feeds
 SELECT * FROM feeds;
+
+-- name: get-single-feed^
+SELECT * FROM feeds
+WHERE feed_id = :feed_id;
+
+-- name: get_feed_by_url
+SELECT * FROM feeds
+WHERE feed_url = :feed_url;
 
 -- name: update-feed-error-count!
 UPDATE feeds
@@ -56,6 +64,3 @@ AS inactive_count;
 -- FROM feeds
 -- WHERE last_updated < (CURRENT_DATE - INTERVAL '60 days');
 
--- name: get_feed_by_url
-SELECT * FROM feeds
-WHERE feed_url = :feed_url;

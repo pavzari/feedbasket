@@ -126,7 +126,7 @@ class SubscriptionsController(Controller):
             feed_count = await queries.get_feed_count(conn)
             inactive_feeds = await queries.get_inactive_feed_count(conn)
             unreachable_feeds = await queries.get_unreachable_feed_count(conn)
-            feeds = [Feed(**entry) for entry in await queries.get_feeds(conn)]
+            feeds = [Feed(**entry) for entry in await queries.get_all_feeds(conn)]
             context = {
                 "feeds": feeds,
                 "feed_count": feed_count,
@@ -201,14 +201,18 @@ class SubscriptionsController(Controller):
         return Redirect(path="/")
 
     @get(path="/{feed_id:int}/edit")
-    async def edit_feed(
-        self,
-        feed_id: int,
-        state: State,
-    ) -> Template:
+    async def edit_feed(self, feed_id: int, state: State) -> Template:
+        async with state.pool.acquire() as conn:
+            feed = await queries.get_single_feed(conn, feed_id=feed_id)
+            latest = await queries.get_latest_entry_date(conn, feed_id=feed_id)
+            tags = await queries.get_feed_tags(conn, feed_id=feed_id)
 
-        context = {"feed_id": feed_id}
-        return Template("feed_edit.html", context=context)
+            context = {
+                "feed": Feed(**feed),
+                "tags": [tag["tag_name"] for tag in tags],
+                "latest_entry_date": latest["published_date"] if latest else None,
+            }
+        return Template("feed_info.html", context=context)
 
 
 logging_config = LoggingConfig(

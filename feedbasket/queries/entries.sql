@@ -25,12 +25,12 @@ ON CONFLICT (entry_url) DO NOTHING;
 SELECT * FROM entries
 ORDER BY published_date DESC;
 
--- name: mark-as-favourite
+-- name: mark-as-favourite!
 UPDATE entries
 SET is_favourite = TRUE
 WHERE entry_id = :entry_id
 
--- name: unmark-as-favourite
+-- name: unmark-as-favourite!
 UPDATE entries
 SET is_favourite = FALSE
 WHERE entry_id = :entry_id
@@ -46,3 +46,9 @@ SELECT COUNT(*) FROM entries;
 -- name: get-favourite-count$
 SELECT COUNT(*) FROM entries
 WHERE is_favourite = TRUE;
+
+-- name: get-latest-entry-date^
+SELECT published_date FROM entries
+WHERE feed_id = :feed_id
+ORDER BY published_date DESC
+LIMIT 1;

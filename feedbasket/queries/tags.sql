@@ -1,6 +1,11 @@
 -- name: get-all-tags
 SELECT tag_name FROM tags;
 
+-- name: get-feed-tags
+SELECT tag_name FROM feed_tags
+JOIN tags on feed_tags.tag_id = tags.tag_id
+WHERE feed_id = :feed_id;
+
 -- name: add-new-tag!
 INSERT INTO tags
 (tag_name)

@@ -1,0 +1,27 @@
+<div>
+  <h1>{{ feed.feed_name }} {{ feed_id }}</h1>
+  <table>
+    <tbody>
+      <tr>
+        <td>Subscribed</td>
+        <td>{{ feed.created_at }}</td>
+      </tr>
+      <tr>
+        <td>Latest Article</td>
+        <td>{{ latest_entry_date }}</td>
+      </tr>
+      <tr>
+        <td>Website</td>
+        <td>{{ feed.feed_url | display_feed_url }}</td>
+      </tr>
+      <tr>
+        <td>Source</td>
+        <td>{{ feed.feed_url }}</td>
+      </tr>
+      <tr>
+        <td>Tags</td>
+        <td>{{ tags }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

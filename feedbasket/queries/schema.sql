@@ -4,7 +4,6 @@ DROP TABLE IF EXISTS tags;
 DROP TABLE IF EXISTS entries;
 DROP TABLE IF EXISTS feeds;
 
--- DROP TABLE IF EXISTS feeds CASCADE;
 CREATE TABLE IF NOT EXISTS feeds (
     feed_id SERIAL PRIMARY KEY,
     feed_url TEXT UNIQUE NOT NULL,
@@ -18,8 +17,7 @@ CREATE TABLE IF NOT EXISTS feeds (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- DROP TABLE IF EXISTS entries;
-CREATE TABLE entries (
+CREATE TABLE IF NOT EXISTS entries (
     entry_id SERIAL PRIMARY KEY,
     entry_title TEXT NOT NULL,
     entry_url TEXT UNIQUE NOT NULL,
@@ -32,19 +30,16 @@ CREATE TABLE entries (
     is_favourite BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     feed_id INT REFERENCES feeds (feed_id)
-
     -- viewed BOOLEAN,
     -- icon_url TEXT,
     -- updated TIMESTAMP,
 );
 
--- DROP TABLE IF EXISTS tags CASCADE;
 CREATE TABLE IF NOT EXISTS tags (
     tag_id SERIAL PRIMARY KEY,
     tag_name TEXT UNIQUE NOT NULL
 );
 
--- DROP TABLE IF EXISTS feed_tags;
 CREATE TABLE IF NOT EXISTS feed_tags (
     feed_id INT REFERENCES feeds (feed_id),
     tag_id INT REFERENCES tags (tag_id),
