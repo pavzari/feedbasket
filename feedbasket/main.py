@@ -21,7 +21,7 @@ from litestar.logging import LoggingConfig
 from feedbasket import config
 from feedbasket.database import close_db_pool, init_db
 from feedbasket.feedfinder import find_feed
-from feedbasket.filters import display_feed_url, display_pub_date
+from feedbasket.filters import display_feed_url, display_pub_date, extract_main_url
 from feedbasket.models import Feed, FeedEntry, NewFeedForm
 from feedbasket.scraper import FeedScraper
 
@@ -31,6 +31,7 @@ jinja_env.filters.update(
     {
         "display_pub_date": display_pub_date,
         "display_feed_url": display_feed_url,
+        "extract_main_url": extract_main_url,
     }
 )
 template_config = TemplateConfig(
@@ -197,7 +198,6 @@ class SubscriptionsController(Controller):
 
         scraper = FeedScraper(state.pool, queries)
         await scraper.run_scraper(data.feed_url)
-
         return Redirect(path="/")
 
     @get(path="/{feed_id:int}/edit")
@@ -209,7 +209,7 @@ class SubscriptionsController(Controller):
 
             context = {
                 "feed": Feed(**feed),
-                "tags": [tag["tag_name"] for tag in tags],
+                "tags": [tag["tag_name"] for tag in tags] if tags else None,
                 "latest_entry_date": latest["published_date"] if latest else None,
             }
         return Template("feed_info.html", context=context)

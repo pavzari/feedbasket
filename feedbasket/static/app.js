@@ -20,16 +20,24 @@ findFeedForm.addEventListener("submit", () => {
     feedForm.innerHTML = "";
 });
 
-// Close modal button.
 modal.addEventListener("click", (event) => {
+    // Close modal button.
     if (event.target.matches("#close-modal-button")) {
+        modal.close();
+    }
+    // Clicking outside closes the modal.
+    if (event.target === modal) {
         modal.close();
     }
 });
 
-// Clicking outside closes the modal.
-modal.addEventListener("click", (event) => {
-    if (event.target === modal) {
+document.body.addEventListener("click", (event) => {
+    if (event.target.matches("#edit-feed-button")) {
+        const modal = document.getElementById("edit-feed-modal");
+        modal.showModal();
+    }
+    if (event.target.matches("#close-modal-button")) {
+        const modal = document.getElementById("edit-feed-modal");
         modal.close();
     }
 });

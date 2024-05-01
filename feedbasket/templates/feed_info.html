@@ -1,4 +1,14 @@
 <div>
+  <span class="favicon">
+    {% if icon_url %}
+    <img src="{{ feed.icon_url }}" />
+    {% else %}
+    <img
+      src="https://www.google.com/s2/favicons?domain={{ feed.feed_url | display_feed_url }}&sz=32"
+    />
+    {% endif %}
+  </span>
+
   <h1>{{ feed.feed_name }} {{ feed_id }}</h1>
   <table>
     <tbody>
@@ -12,11 +22,17 @@
       </tr>
       <tr>
         <td>Website</td>
-        <td>{{ feed.feed_url | display_feed_url }}</td>
+        <td>
+          <a href="{{ feed.feed_url | extract_main_url }}"
+            >{{ feed.feed_url | extract_main_url }}</a
+          >
+        </td>
       </tr>
       <tr>
         <td>Source</td>
-        <td>{{ feed.feed_url }}</td>
+        <td>
+          <a href="{{ feed.feed_url }}">{{ feed.feed_url }}</a>
+        </td>
       </tr>
       <tr>
         <td>Tags</td>
@@ -25,3 +41,43 @@
     </tbody>
   </table>
 </div>
+
+<button id="edit-feed-button">Edit Feed</button>
+
+<dialog id="edit-feed-modal">
+  <form
+    action="/subscriptions/{{ feed.feed_id }}/edit"
+    method="post"
+    id="edit-feed"
+    style="display: grid; grid-gap: 0.5rem"
+  >
+    <label for="feed_name">Feed Name</label>
+    <input
+      id="feed_name"
+      name="feed_name"
+      value="{{ feed.feed_name }}"
+      required
+    />
+
+    <!-- add new tag-->
+    <label for="new_tag">Tags</label>
+    <input type="text" name="new_tag" placeholder="+ New Tag" />
+
+    <!-- checkboxes for existing tags-->
+    {% if tags %} {% for tag in tags %}
+    <label>
+      <input type="checkbox" name="existing_tags" value="{{ tag }}" checked />
+      {{ tag }}
+    </label>
+    {% endfor %} {% endif %}
+  </form>
+
+  <button
+    hx-get="/subscriptions/{{ feed.feed_id }}/unsubscribe"
+    hx-push-url="true"
+  >
+    Unsubscribe
+  </button>
+  <button type="submit" form="edit-feed">Save</button>
+  <button id="close-modal-button">Cancel</button>
+</dialog>

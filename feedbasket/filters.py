@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-
+from urllib.parse import urlparse
 import tldextract
 
 
@@ -31,6 +31,14 @@ def display_pub_date(entry_date: datetime | None) -> str:
 
 
 def display_feed_url(url: str) -> str:
+    """Shorten feed source URL"""
     extracted = tldextract.extract(url)
     main_domain = extracted.domain + "." + extracted.suffix
     return main_domain
+
+
+def extract_main_url(feed_url: str) -> str:
+    """Get main website URL from feed URL"""
+    parsed_url = urlparse(feed_url)
+    main_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
+    return main_url

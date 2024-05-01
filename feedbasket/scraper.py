@@ -208,10 +208,13 @@ class FeedScraper:
         async with self._pool.acquire() as conn:
             if url:
                 feeds = [
-                    feed(**feed)
+                    Feed(**feed)
                     for feed in await self._queries.get_feed_by_url(conn, url)
                 ]
-            feeds = [Feed(**feed) for feed in await self._queries.get_all_feeds(conn)]
+            else:
+                feeds = [
+                    Feed(**feed) for feed in await self._queries.get_all_feeds(conn)
+                ]
 
         if not feeds:
             log.info("No feeds to scrape.")
