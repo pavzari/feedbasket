@@ -6,9 +6,10 @@ from typing import Annotated
 import aiosql
 from asyncpg.pool import Pool
 from jinja2 import Environment, FileSystemLoader
-from litestar import Controller, Litestar, Response, get, post, put
+from litestar import Controller, Litestar, Response, get, post, put, delete
 from litestar.contrib.htmx.request import HTMXRequest
-from litestar.contrib.htmx.response import HTMXTemplate
+from litestar.contrib.htmx.response import HTMXTemplate, ClientRedirect
+from litestar.status_codes import HTTP_303_SEE_OTHER
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
 from litestar.enums import RequestEncodingType
@@ -145,15 +146,15 @@ class SubscriptionsController(Controller):
     ) -> Template | Response:
         response = find_feed(data["url"])
         if not response:
-            return response(content="feed could not be found.")
+            return Response(content="feed could not be found.")
 
-        # todo: multiple feeds available
+        # TODO: multiple feeds available
         feed_url, feed_name, feed_type, icon_url = response
 
         async with state.pool.acquire() as conn:
             check = await queries.check_feed_exists(conn, feed_url=feed_url)
             if check[0]["exists"]:
-                return response(content="you already follow this feed.")
+                return Response(content="You already follow this feed.")
 
             tags = await queries.get_all_tags(conn)
             context = {
@@ -228,6 +229,14 @@ class SubscriptionsController(Controller):
             await queries.toggle_mute_feed(
                 conn, feed_id=feed_id, muted=data["mute-feed"]
             )
+
+    @delete(path="/{feed_id:int}/unsubscribe", status_code=HTTP_303_SEE_OTHER)
+    async def unsubscribe(self, state: State, feed_id: int) -> ClientRedirect:
+        async with state.pool.acquire() as conn:
+            await queries.delete_entries_unsubscribe(conn, feed_id)
+            await queries.favourites_unsubscribe(conn, feed_id)
+            await queries.feed_unsubscribe(conn, feed_id)
+        return ClientRedirect(redirect_to="/subscriptions")
 
 
 logging_config = LoggingConfig(

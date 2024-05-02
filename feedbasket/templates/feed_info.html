@@ -98,8 +98,8 @@
   </form>
 
   <button
-    hx-get="/subscriptions/{{ feed.feed_id }}/unsubscribe"
-    hx-push-url="true"
+    hx-delete="/subscriptions/{{ feed.feed_id }}/unsubscribe"
+    hx-confirm="Are you sure you wish to unsubscribe from {{ feed.feed_name }}?"
   >
     Unsubscribe
   </button>

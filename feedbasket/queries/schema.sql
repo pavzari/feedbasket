@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS entries (
     cleaned_content TEXT,
     is_favourite BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    feed_id INT REFERENCES feeds (feed_id)
+    feed_id INT REFERENCES feeds (feed_id) 
     -- viewed BOOLEAN,
     -- icon_url TEXT,
     -- updated TIMESTAMP,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS tags (
 );
 
 CREATE TABLE IF NOT EXISTS feed_tags (
-    feed_id INT REFERENCES feeds (feed_id),
+    feed_id INT REFERENCES feeds (feed_id) ON DELETE CASCADE,
     tag_id INT REFERENCES tags (tag_id),
     PRIMARY KEY (feed_id, tag_id)
 );

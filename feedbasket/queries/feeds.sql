@@ -69,3 +69,17 @@ AS inactive_count;
 -- FROM feeds
 -- WHERE last_updated < (CURRENT_DATE - INTERVAL '60 days');
 
+-- name: feed-unsubscribe!
+DELETE FROM feeds
+WHERE feed_id = :feed_id;
+
+-- name: delete-entries-unsubscribe!
+DELETE FROM entries
+WHERE feed_id = :feed_id
+AND is_favourite = FALSE;
+
+-- name: favourites-unsubscribe!
+UPDATE entries
+SET feed_id = NULL
+WHERE feed_id = :feed_id
+AND is_favourite = TRUE;
