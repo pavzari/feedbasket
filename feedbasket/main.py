@@ -157,6 +157,7 @@ class SubscriptionsController(Controller):
                 return Response(content="You already follow this feed.")
 
             tags = await queries.get_all_tags(conn)
+            print(tags)
             context = {
                 "feed_url": feed_url,
                 "feed_name": feed_name,
@@ -202,18 +203,62 @@ class SubscriptionsController(Controller):
         return Redirect(path="/")
 
     @get(path="/{feed_id:int}/edit")
-    async def edit_feed(self, feed_id: int, state: State) -> Template:
+    async def view_feed_info(self, feed_id: int, state: State) -> Template:
         async with state.pool.acquire() as conn:
             feed = await queries.get_single_feed(conn, feed_id=feed_id)
             latest = await queries.get_latest_entry_date(conn, feed_id=feed_id)
-            tags = await queries.get_feed_tags(conn, feed_id=feed_id)
+            all_tags = [tag["tag_name"] for tag in await queries.get_all_tags(conn)]
+            assigned_tags = [
+                tag["tag_name"]
+                for tag in await queries.get_feed_tags(conn, feed_id=feed_id)
+            ]
+            if not assigned_tags:
+                available_tags = all_tags
+            else:
+                available_tags = [tag for tag in all_tags if tag not in assigned_tags]
 
             context = {
                 "feed": Feed(**feed),
-                "tags": [tag["tag_name"] for tag in tags] if tags else None,
+                "assigned_tags": assigned_tags if assigned_tags else None,
+                "available_tags": available_tags if available_tags else None,
                 "latest_entry_date": latest["published_date"] if latest else None,
             }
         return Template("feed_info.html", context=context)
+
+    @post(path="/{feed_id:int}/edit")
+    async def edit_feed(
+        self,
+        feed_id: int,
+        state: State,
+        data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+    ) -> Redirect:
+        # {'feed_name': 'The Verge -  All Posts', 'new_tag': '', 'assigned_tags': ['tag_1', 'tag_3'], 'available_tags': 'tag_2'}
+        print(data)
+
+        # combine checkeckboxes and new tag if present.
+        # TODO: lowercase! feed_tag_relationship by feed_id vs feed_url! feed_name:
+        # required form input.
+        all_tags = []
+        if data.get("assigned_tags"):
+            all_tags.extend(data["assigned_tags"])
+
+        if data.get("available_tags"):
+            all_tags.extend(data["available_tags"])
+
+        if data["new_tag"]:
+            all_tags.append(data["new_tag"].lower())
+
+        async with state.pool.acquire() as conn:
+            if all_tags:
+                for tag in all_tags:
+                    await queries.add_new_tag(conn, tag_name=tag)
+                    await queries.create_feed_tag_relationship(
+                        conn, feed_url=data.feed_url, tag_name=tag
+                    )
+            await queries.update_feed_name(conn, feed_id, data["feed_name"])
+            await queries.delete_unused_tags(conn)
+
+        return Redirect(path="/{feed_id:int}/edit")
 
     @post(path="/toggle-mute-feed/{feed_id:int}")
     async def toggle_mute_feed(

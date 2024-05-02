@@ -88,10 +88,18 @@
     <label for="new_tag">Tags</label>
     <input type="text" name="new_tag" placeholder="+ New Tag" />
 
-    <!-- checkboxes for existing tags-->
-    {% if tags %} {% for tag in tags %}
+    <!-- checkboxes for tags that are assigned to the feed-->
+    {% if assigned_tags %} {% for tag in assigned_tags %}
     <label>
-      <input type="checkbox" name="existing_tags" value="{{ tag }}" checked />
+      <input type="checkbox" name="assigned_tags" value="{{ tag }}" checked />
+      {{ tag }}
+    </label>
+    {% endfor %} {% endif %}
+
+    <!-- checkboxes for other available tags-->
+    {% if available_tags %} {% for tag in available_tags %}
+    <label>
+      <input type="checkbox" name="available_tags" value="{{ tag }}" />
       {{ tag }}
     </label>
     {% endfor %} {% endif %}

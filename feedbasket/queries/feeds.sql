@@ -28,6 +28,11 @@ UPDATE feeds
 SET parsing_error_count = parsing_error_count + 1
 WHERE feed_id = :feed_id;
 
+-- name: update-feed-name!
+UPDATE feeds
+SET feed_name = :feed_name
+WHERE feed_id = :feed_id;
+
 -- name: toggle-mute-feed!
 UPDATE feeds
 SET muted = :muted
