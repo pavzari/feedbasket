@@ -36,8 +36,8 @@ SELECT
     e.created_at,
     e.feed_id
 FROM entries e
-JOIN feeds f ON e.feed_id = f.feed_id
-WHERE f.muted = FALSE
+LEFT JOIN feeds f ON e.feed_id = f.feed_id
+WHERE f.muted = FALSE or f.muted is null
 ORDER BY e.published_date DESC;
 
 -- name: mark-as-favourite!

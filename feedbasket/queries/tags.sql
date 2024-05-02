@@ -25,3 +25,10 @@ ON CONFLICT DO NOTHING;
 SELECT tag_name, feed_url FROM feed_tags
 JOIN tags ON feed_tags.tag_id = tags.tag_id
 JOIN feeds ON feed_tags.feed_id = feeds.feed_id;
+
+-- name: delete-unused-tags!
+DELETE FROM tags
+WHERE tag_id NOT IN (
+    SELECT tag_id
+    FROM feed_tags
+);

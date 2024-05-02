@@ -93,4 +93,4 @@ class FeedEntry(BaseModel):
     cleaned_content: str | None
     is_favourite: bool
     created_at: datetime
-    feed_id: int
+    feed_id: int | None  # saved entries after feed deletion

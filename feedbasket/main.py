@@ -236,6 +236,7 @@ class SubscriptionsController(Controller):
             await queries.delete_entries_unsubscribe(conn, feed_id)
             await queries.favourites_unsubscribe(conn, feed_id)
             await queries.feed_unsubscribe(conn, feed_id)
+            await queries.delete_unused_tags(conn)
         return ClientRedirect(redirect_to="/subscriptions")
 
 
