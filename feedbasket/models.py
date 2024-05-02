@@ -39,6 +39,7 @@ class Feed(BaseModel):
     feed_type: str | None
     icon_url: str | None  #!
     etag_header: str | None
+    muted: bool
     last_modified_header: str | None
     parsing_error_count: int
     created_at: datetime

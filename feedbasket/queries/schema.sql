@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS feeds (
     feed_type TEXT,
     icon_url TEXT,
     etag_header TEXT,
+    muted BOOLEAN DEFAULT FALSE,
     last_modified_header TEXT,
     parsing_error_count INT DEFAULT 0, 
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP

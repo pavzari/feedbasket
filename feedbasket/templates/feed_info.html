@@ -10,6 +10,7 @@
   </span>
 
   <h1>{{ feed.feed_name }} {{ feed_id }}</h1>
+  <h2>Stats</h2>
   <table>
     <tbody>
       <tr>
@@ -41,6 +42,30 @@
     </tbody>
   </table>
 </div>
+
+<h2>Options</h2>
+<form
+  hx-post="/subscriptions/toggle-mute-feed/{{ feed.feed_id }}"
+  hx-trigger="change"
+  hx-swap="none"
+>
+  <input
+    type="checkbox"
+    name="mute-feed"
+    value="{{ not feed.muted }}"
+    id="mute-feed-{{ feed.feed_id }}"
+    {%
+    if
+    feed.muted
+    %}checked{%
+    endif
+    %}
+  />
+  {% if feed.muted %}
+  <input type="hidden" name="mute-feed" value="{{ not feed.muted }}" />
+  {% endif %}
+  <label for="mute-feed-{{ feed.feed_id }}"> Mute on main feed </label>
+</form>
 
 <button id="edit-feed-button">Edit Feed</button>
 

@@ -145,15 +145,15 @@ class SubscriptionsController(Controller):
     ) -> Template | Response:
         response = find_feed(data["url"])
         if not response:
-            return Response(content="Feed could not be found.")
+            return response(content="feed could not be found.")
 
-        # TODO: multiple feeds available
+        # todo: multiple feeds available
         feed_url, feed_name, feed_type, icon_url = response
 
         async with state.pool.acquire() as conn:
             check = await queries.check_feed_exists(conn, feed_url=feed_url)
             if check[0]["exists"]:
-                return Response(content="You already follow this feed.")
+                return response(content="you already follow this feed.")
 
             tags = await queries.get_all_tags(conn)
             context = {
@@ -213,6 +213,21 @@ class SubscriptionsController(Controller):
                 "latest_entry_date": latest["published_date"] if latest else None,
             }
         return Template("feed_info.html", context=context)
+
+    @post(path="/toggle-mute-feed/{feed_id:int}")
+    async def toggle_mute_feed(
+        self,
+        feed_id: int,
+        state: State,
+        data: Annotated[
+            dict[str, bool], Body(media_type=RequestEncodingType.URL_ENCODED)
+        ],
+    ) -> None:
+        # TODO: confirmation modal.
+        async with state.pool.acquire() as conn:
+            await queries.toggle_mute_feed(
+                conn, feed_id=feed_id, muted=data["mute-feed"]
+            )
 
 
 logging_config = LoggingConfig(

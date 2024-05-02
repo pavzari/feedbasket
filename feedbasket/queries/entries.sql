@@ -22,8 +22,23 @@ INSERT INTO entries (
 ON CONFLICT (entry_url) DO NOTHING;
 
 -- name: get-entries
-SELECT * FROM entries
-ORDER BY published_date DESC;
+SELECT
+    e.entry_id,
+    e.entry_title,
+    e.entry_url,
+    e.author,
+    e.summary,
+    e.content,
+    e.published_date,
+    e.updated_date,
+    e.cleaned_content,
+    e.is_favourite,
+    e.created_at,
+    e.feed_id
+FROM entries e
+JOIN feeds f ON e.feed_id = f.feed_id
+WHERE f.muted = FALSE
+ORDER BY e.published_date DESC;
 
 -- name: mark-as-favourite!
 UPDATE entries
