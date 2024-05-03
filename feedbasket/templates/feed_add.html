@@ -26,10 +26,10 @@
   <label for="new_tag">Tags</label>
   <input type="text" name="new_tag" placeholder="+ New Tag" />
 
-  <!-- checkboxes for existing tags-->
+  <!-- checkboxes for available tags-->
   {% for tag in tags %}
   <label>
-    <input type="checkbox" name="existing_tags" value="{{ tag.tag_name }}" />
+    <input type="checkbox" name="selected_tags" value="{{ tag.tag_name }}" />
     {{ tag.tag_name }}
   </label>
   {% endfor %}

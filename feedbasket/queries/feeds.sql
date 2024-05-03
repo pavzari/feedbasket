@@ -38,14 +38,16 @@ UPDATE feeds
 SET muted = :muted
 WHERE feed_id = :feed_id;
 
--- name: add-feed!
+-- name: add-feed<!
 INSERT INTO feeds
 (feed_url, feed_name, feed_type, icon_url)
 VALUES (:feed_url, :feed_name, :feed_type, :icon_url)
-ON CONFLICT (feed_url) DO NOTHING;
+ON CONFLICT (feed_url) DO NOTHING
+RETURNING feed_id;
 
 --name: check-feed-exists
-SELECT EXISTS(SELECT 1
+SELECT EXISTS (
+    SELECT 1
     FROM feeds 
     WHERE feed_url = :feed_url
 );

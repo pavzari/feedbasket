@@ -14,12 +14,12 @@ class NewFeedForm(BaseModel):
     feed_url: str
     feed_name: str
     feed_type: Optional[str] = None
-    existing_tags: Optional[list[str] | str] = None
+    selected_tags: Optional[list[str] | str] = None
     icon_url: Optional[str] = None
     new_tag: Optional[str] = None
 
-    @field_validator("existing_tags", mode="after")
-    def existing_tags_to_list(cls, value):
+    @field_validator("selected_tags", mode="after")
+    def selected_tags_to_list(cls, value):
         if isinstance(value, str):
             return [value]
         elif isinstance(value, list):

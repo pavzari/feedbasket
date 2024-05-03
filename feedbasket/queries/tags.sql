@@ -15,11 +15,20 @@ ON CONFLICT (tag_name) DO NOTHING;
 -- name: create-feed-tag-relationship!
 INSERT INTO feed_tags (feed_id, tag_id)
 SELECT
-    (SELECT feed_id FROM feeds WHERE feed_url = :feed_url),
+    :feed_id,
     tag_id
 FROM tags
 WHERE tag_name = :tag_name
 ON CONFLICT DO NOTHING;
+
+-- name: remove-feed-tag-relationship!
+DELETE FROM feed_tags
+WHERE feed_id = :feed_id
+  AND tag_id = (
+    SELECT tag_id
+    FROM tags
+    WHERE tag_name = :tag_name
+  );
 
 -- name: get-tags-feeds
 SELECT tag_name, feed_url FROM feed_tags

@@ -84,6 +84,10 @@
       required
     />
 
+    <!-- hidden feed meta passed to /feeds/add via the form -->
+    <input type="hidden" name="feed_url" value="{{ feed_url }}" />
+    <input type="hidden" name="feed_type" value="{{ feed_type }}" />
+
     <!-- add new tag-->
     <label for="new_tag">Tags</label>
     <input type="text" name="new_tag" placeholder="+ New Tag" />
@@ -91,7 +95,7 @@
     <!-- checkboxes for tags that are assigned to the feed-->
     {% if assigned_tags %} {% for tag in assigned_tags %}
     <label>
-      <input type="checkbox" name="assigned_tags" value="{{ tag }}" checked />
+      <input type="checkbox" name="selected_tags" value="{{ tag }}" checked />
       {{ tag }}
     </label>
     {% endfor %} {% endif %}
@@ -99,7 +103,7 @@
     <!-- checkboxes for other available tags-->
     {% if available_tags %} {% for tag in available_tags %}
     <label>
-      <input type="checkbox" name="available_tags" value="{{ tag }}" />
+      <input type="checkbox" name="selected_tags" value="{{ tag }}" />
       {{ tag }}
     </label>
     {% endfor %} {% endif %}

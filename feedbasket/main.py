@@ -157,7 +157,6 @@ class SubscriptionsController(Controller):
                 return Response(content="You already follow this feed.")
 
             tags = await queries.get_all_tags(conn)
-            print(tags)
             context = {
                 "feed_url": feed_url,
                 "feed_name": feed_name,
@@ -175,7 +174,7 @@ class SubscriptionsController(Controller):
         data: Annotated[NewFeedForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Redirect:
         async with state.pool.acquire() as conn:
-            await queries.add_feed(
+            feed_id = await queries.add_feed(
                 conn,
                 feed_url=data.feed_url,
                 feed_name=data.feed_name,
@@ -184,18 +183,18 @@ class SubscriptionsController(Controller):
             )
 
             # combine checkeckboxes and new tag if present.
-            all_tags = []
-            if data.existing_tags:
-                all_tags.extend(data.existing_tags)
+            tags = []
+            if data.selected_tags:
+                tags.extend(data.selected_tags)
 
             if data.new_tag:
-                all_tags.append(data.new_tag.lower())
+                tags.append(data.new_tag.lower())
 
-            if all_tags:
-                for tag in all_tags:
+            if tags:
+                for tag in tags:
                     await queries.add_new_tag(conn, tag_name=tag)
                     await queries.create_feed_tag_relationship(
-                        conn, feed_url=data.feed_url, tag_name=tag
+                        conn, feed_id=feed_id, tag_name=tag
                     )
 
         scraper = FeedScraper(state.pool, queries)
@@ -212,6 +211,7 @@ class SubscriptionsController(Controller):
                 tag["tag_name"]
                 for tag in await queries.get_feed_tags(conn, feed_id=feed_id)
             ]
+
             if not assigned_tags:
                 available_tags = all_tags
             else:
@@ -230,35 +230,54 @@ class SubscriptionsController(Controller):
         self,
         feed_id: int,
         state: State,
-        data: Annotated[dict, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        data: Annotated[
+            NewFeedForm,
+            Body(media_type=RequestEncodingType.URL_ENCODED),
+        ],
     ) -> Redirect:
         # {'feed_name': 'The Verge -  All Posts', 'new_tag': '', 'assigned_tags': ['tag_1', 'tag_3'], 'available_tags': 'tag_2'}
         print(data)
 
-        # combine checkeckboxes and new tag if present.
         # TODO: lowercase! feed_tag_relationship by feed_id vs feed_url! feed_name:
         # required form input.
-        all_tags = []
-        if data.get("assigned_tags"):
-            all_tags.extend(data["assigned_tags"])
+        # REMOVE PREVIOUS TAG ASSOCIATIONS..
+        # ALSO SINGLE values need to be arrays for extend.
 
-        if data.get("available_tags"):
-            all_tags.extend(data["available_tags"])
+        # combine checkeckboxes and new tag if present.
+        tags = []
+        if data.selected_tags:
+            tags.extend(data.selected_tags)
 
-        if data["new_tag"]:
-            all_tags.append(data["new_tag"].lower())
+        if data.new_tag:
+            tags.append(data.new_tag.lower())
 
         async with state.pool.acquire() as conn:
-            if all_tags:
-                for tag in all_tags:
+            await queries.update_feed_name(
+                conn, feed_id=feed_id, feed_name=data.feed_name
+            )
+
+            old_tags = [
+                tag["tag_name"]
+                for tag in await queries.get_feed_tags(conn, feed_id=feed_id)
+            ]
+            removed_tags = [tag for tag in old_tags if tag not in tags]
+
+            if tags:
+                for tag in tags:
                     await queries.add_new_tag(conn, tag_name=tag)
                     await queries.create_feed_tag_relationship(
-                        conn, feed_url=data.feed_url, tag_name=tag
+                        conn, feed_id=feed_id, tag_name=tag
                     )
-            await queries.update_feed_name(conn, feed_id, data["feed_name"])
+            if removed_tags:
+                for tag in removed_tags:
+                    await queries.remove_feed_tag_relationship(
+                        conn, feed_id=feed_id, tag_name=tag
+                    )
+
             await queries.delete_unused_tags(conn)
 
-        return Redirect(path="/{feed_id:int}/edit")
+        # TODO: returns just the fragment instead of rendering the whole page
+        return Redirect(path=f"/subscriptions/{feed_id}/edit")
 
     @post(path="/toggle-mute-feed/{feed_id:int}")
     async def toggle_mute_feed(
