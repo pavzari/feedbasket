@@ -8,8 +8,8 @@ from pydantic import BaseModel, field_validator
 log = logging.getLogger(__name__)
 
 
-class NewFeedForm(BaseModel):
-    """New feed form data model."""
+class FeedForm(BaseModel):
+    """Add/Edit feed form data model."""
 
     feed_url: str
     feed_name: str
@@ -29,8 +29,7 @@ class NewFeedForm(BaseModel):
 
 
 class Feed(BaseModel):
-    """Represents an existing feed in the database.
-    Matches the schema of the 'feeds' table."""
+    """Represents an existing feed in the database."""
 
     feed_id: int
     feed_url: str
@@ -43,6 +42,14 @@ class Feed(BaseModel):
     last_modified_header: str | None
     parsing_error_count: int
     created_at: datetime
+    tags: Optional[list[str | None]] = None
+
+    @field_validator("tags", mode="after")
+    def null_arr_agg_to_none(cls, value):
+        if value == [None]:
+            return None
+        else:
+            return value
 
 
 class NewFeedEntry(BaseModel):

@@ -6,26 +6,25 @@ from typing import Annotated
 import aiosql
 from asyncpg.pool import Pool
 from jinja2 import Environment, FileSystemLoader
-from litestar import Controller, Litestar, Response, get, post, put, delete
+from litestar import Controller, Litestar, Response, delete, get, post, put
 from litestar.contrib.htmx.request import HTMXRequest
-from litestar.contrib.htmx.response import HTMXTemplate, ClientRedirect
-from litestar.status_codes import HTTP_303_SEE_OTHER
+from litestar.contrib.htmx.response import ClientRedirect, HTMXTemplate
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
 from litestar.enums import RequestEncodingType
+from litestar.logging import LoggingConfig
 from litestar.params import Body
 from litestar.response import Redirect, Template
 from litestar.static_files import create_static_files_router
+from litestar.status_codes import HTTP_303_SEE_OTHER
 from litestar.template.config import TemplateConfig
-from litestar.logging import LoggingConfig
 
 from feedbasket import config
 from feedbasket.database import close_db_pool, init_db
 from feedbasket.feedfinder import find_feed
 from feedbasket.filters import display_feed_url, display_pub_date, extract_main_url
-from feedbasket.models import Feed, FeedEntry, NewFeedForm
+from feedbasket.models import Feed, FeedEntry, FeedForm
 from feedbasket.scraper import FeedScraper
-
 
 jinja_env = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"))
 jinja_env.filters.update(
@@ -128,7 +127,7 @@ class SubscriptionsController(Controller):
             feed_count = await queries.get_feed_count(conn)
             inactive_feeds = await queries.get_inactive_feed_count(conn)
             unreachable_feeds = await queries.get_unreachable_feed_count(conn)
-            feeds = [Feed(**entry) for entry in await queries.get_all_feeds(conn)]
+            feeds = [Feed(**entry) for entry in await queries.get_feeds_with_tags(conn)]
             context = {
                 "feeds": feeds,
                 "feed_count": feed_count,
@@ -171,7 +170,7 @@ class SubscriptionsController(Controller):
     async def add_new_feed(
         self,
         state: State,
-        data: Annotated[NewFeedForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
+        data: Annotated[FeedForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Redirect:
         async with state.pool.acquire() as conn:
             feed_id = await queries.add_feed(
@@ -188,7 +187,7 @@ class SubscriptionsController(Controller):
                 tags.extend(data.selected_tags)
 
             if data.new_tag:
-                tags.append(data.new_tag.lower())
+                tags.append(data.new_tag.lower().strip())
 
             if tags:
                 for tag in tags:
@@ -230,18 +229,8 @@ class SubscriptionsController(Controller):
         self,
         feed_id: int,
         state: State,
-        data: Annotated[
-            NewFeedForm,
-            Body(media_type=RequestEncodingType.URL_ENCODED),
-        ],
+        data: Annotated[FeedForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Redirect:
-        # {'feed_name': 'The Verge -  All Posts', 'new_tag': '', 'assigned_tags': ['tag_1', 'tag_3'], 'available_tags': 'tag_2'}
-        print(data)
-
-        # TODO: lowercase! feed_tag_relationship by feed_id vs feed_url! feed_name:
-        # required form input.
-        # REMOVE PREVIOUS TAG ASSOCIATIONS..
-        # ALSO SINGLE values need to be arrays for extend.
 
         # combine checkeckboxes and new tag if present.
         tags = []
@@ -249,7 +238,7 @@ class SubscriptionsController(Controller):
             tags.extend(data.selected_tags)
 
         if data.new_tag:
-            tags.append(data.new_tag.lower())
+            tags.append(data.new_tag.lower().strip())
 
         async with state.pool.acquire() as conn:
             await queries.update_feed_name(

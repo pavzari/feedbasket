@@ -9,6 +9,11 @@
     {% endif %}
   </td>
   <td>{{ feed.feed_name }}</td>
+  <td>
+    {% if feed.tags %} {% for tag in feed.tags %}
+    <span class="tag">{{ tag }}</span>
+    {% endfor %} {% endif %}
+  </td>
   <td>{{ feed.feed_url | display_feed_url }}</td>
   <td>{{ feed.last_updated | display_pub_date }}</td>
   <td>

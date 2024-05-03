@@ -37,7 +37,11 @@
       </tr>
       <tr>
         <td>Tags</td>
-        <td>{{ tags }}</td>
+        <td>
+          {% if assigned_tags %} {% for tag in assigned_tags %}
+          <span class="tag">{{ tag }}</span>
+          {% endfor %} {% endif %}
+        </td>
       </tr>
     </tbody>
   </table>

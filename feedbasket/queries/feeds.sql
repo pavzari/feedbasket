@@ -15,6 +15,27 @@ WHERE feed_url = :feed_url;
 -- name: get-all-feeds
 SELECT * FROM feeds;
 
+-- name: get_feeds_with_tags
+SELECT
+    f.feed_id,
+    f.feed_url,
+    f.feed_name,
+    f.last_updated,
+    f.feed_type,
+    f.icon_url,
+    f.etag_header,
+    f.muted,
+    f.last_modified_header,
+    f.parsing_error_count,
+    f.created_at,
+    ARRAY_AGG(t.tag_name) AS tags
+FROM
+    feeds f
+    LEFT JOIN feed_tags ft ON f.feed_id = ft.feed_id
+    LEFT JOIN tags t ON ft.tag_id = t.tag_id
+GROUP BY
+    f.feed_id;
+
 -- name: get-single-feed^
 SELECT * FROM feeds
 WHERE feed_id = :feed_id;
