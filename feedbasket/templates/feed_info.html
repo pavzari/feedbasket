@@ -114,7 +114,7 @@
   </form>
 
   <button
-    hx-delete="/subscriptions/{{ feed.feed_id }}/unsubscribe"
+    hx-delete="/subscriptions/{{ feed.feed_id }}"
     hx-confirm="Are you sure you wish to unsubscribe from {{ feed.feed_name }}?"
   >
     Unsubscribe

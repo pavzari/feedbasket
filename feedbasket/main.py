@@ -6,17 +6,27 @@ from typing import Annotated
 import aiosql
 from asyncpg.pool import Pool
 from jinja2 import Environment, FileSystemLoader
-from litestar import Controller, Litestar, Response, delete, get, post, put
+from litestar import (
+    Controller,
+    Litestar,
+    Request,
+    Response,
+    delete,
+    get,
+    post,
+    put,
+)
 from litestar.contrib.htmx.request import HTMXRequest
 from litestar.contrib.htmx.response import ClientRedirect, HTMXTemplate
 from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
 from litestar.enums import RequestEncodingType
+from litestar.exceptions import HTTPException
 from litestar.logging import LoggingConfig
 from litestar.params import Body
 from litestar.response import Redirect, Template
 from litestar.static_files import create_static_files_router
-from litestar.status_codes import HTTP_303_SEE_OTHER
+from litestar.status_codes import HTTP_303_SEE_OTHER, HTTP_404_NOT_FOUND
 from litestar.template.config import TemplateConfig
 
 from feedbasket import config
@@ -204,6 +214,10 @@ class SubscriptionsController(Controller):
     async def view_feed_info(self, feed_id: int, state: State) -> Template:
         async with state.pool.acquire() as conn:
             feed = await queries.get_single_feed(conn, feed_id=feed_id)
+
+            if not feed:
+                raise HTTPException(status_code=404, detail="Feed not found")
+
             latest = await queries.get_latest_entry_date(conn, feed_id=feed_id)
             all_tags = [tag["tag_name"] for tag in await queries.get_all_tags(conn)]
             assigned_tags = [
@@ -283,7 +297,7 @@ class SubscriptionsController(Controller):
                 conn, feed_id=feed_id, muted=data["mute-feed"]
             )
 
-    @delete(path="/{feed_id:int}/unsubscribe", status_code=HTTP_303_SEE_OTHER)
+    @delete(path="/{feed_id:int}", status_code=HTTP_303_SEE_OTHER)
     async def unsubscribe(self, state: State, feed_id: int) -> ClientRedirect:
         async with state.pool.acquire() as conn:
             await queries.delete_entries_unsubscribe(conn, feed_id)
@@ -300,6 +314,14 @@ logging_config = LoggingConfig(
     },
 )
 
+
+def exception_handler(_: Request, exc: Exception) -> Template:
+    return Template(
+        "error.html",
+        status_code=HTTP_404_NOT_FOUND,
+    )
+
+
 app = Litestar(
     lifespan=[lifespan],
     request_class=HTMXRequest,
@@ -311,4 +333,5 @@ app = Litestar(
     ],
     template_config=template_config,
     logging_config=logging_config,
+    exception_handlers={HTTPException: exception_handler},
 )
