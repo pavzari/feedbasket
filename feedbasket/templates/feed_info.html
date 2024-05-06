@@ -15,11 +15,14 @@
     <tbody>
       <tr>
         <td>Subscribed</td>
-        <td>{{ feed.created_at }}</td>
+        <td>{{ (feed.created_at | utc_to_local).strftime("%B %d, %Y") }}</td>
       </tr>
       <tr>
         <td>Latest Article</td>
-        <td>{{ latest_entry_date }}</td>
+        <td>
+          {% if latest_entry_date %} {{ (latest_entry_date |
+          utc_to_local).strftime("%B %d, %Y") }} {% else %} - {% endif %}
+        </td>
       </tr>
       <tr>
         <td>Website</td>
@@ -49,7 +52,7 @@
 
 <h2>Options</h2>
 <form
-  hx-post="/subscriptions/toggle-mute-feed/{{ feed.feed_id }}"
+  hx-post="/subscriptions/{{ feed.feed_id }}/mute"
   hx-trigger="change"
   hx-swap="none"
 >

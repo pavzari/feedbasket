@@ -32,7 +32,12 @@ from litestar.template.config import TemplateConfig
 from feedbasket import config
 from feedbasket.database import close_db_pool, init_db
 from feedbasket.feedfinder import find_feed
-from feedbasket.filters import display_feed_url, display_pub_date, extract_main_url
+from feedbasket.filters import (
+    display_feed_url,
+    display_pub_date,
+    extract_main_url,
+    convert_utc_to_local,
+)
 from feedbasket.models import Feed, FeedEntry, FeedForm
 from feedbasket.scraper import FeedScraper
 
@@ -42,6 +47,7 @@ jinja_env.filters.update(
         "display_pub_date": display_pub_date,
         "display_feed_url": display_feed_url,
         "extract_main_url": extract_main_url,
+        "utc_to_local": convert_utc_to_local,
     }
 )
 template_config = TemplateConfig(
@@ -282,7 +288,7 @@ class SubscriptionsController(Controller):
         # TODO: returns just the fragment instead of rendering the whole page
         return Redirect(path=f"/subscriptions/{feed_id}/edit")
 
-    @post(path="/toggle-mute-feed/{feed_id:int}")
+    @post(path="/{feed_id:int}/mute")
     async def toggle_mute_feed(
         self,
         feed_id: int,

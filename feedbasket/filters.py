@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from urllib.parse import urlparse
-
+from tzlocal import get_localzone
 import tldextract
 
 
@@ -43,3 +43,10 @@ def extract_main_url(feed_url: str) -> str:
     parsed_url = urlparse(feed_url)
     main_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
     return main_url
+
+
+def convert_utc_to_local(utc_datetime: datetime) -> datetime:
+    local_tz = get_localzone()
+    _utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
+    converted_datetime = _utc_datetime.astimezone(local_tz)
+    return converted_datetime

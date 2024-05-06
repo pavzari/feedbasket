@@ -2,28 +2,28 @@
 <div class="wrapper">
 
     <div class="sticky lside">
-      <h1>Feeds({{ feed_count }})</h1>
+        <h1>Feeds({{ feed_count }})</h1>
     </div>
 
     <div class="main" id="main">
 
-    <div>
-        <h2> Organize subscriptions </h2>
-        <p>Following {{ feed_count }} feeds with {{ inactive_feeds }} inactive and {{ unreachable_feeds }}  unreachable.</p> 
+        <div>
+            <h2>Organize subscriptions</h2>
+            <p>Following {{ feed_count }} feeds with {{ inactive_feeds }} inactive and {{ unreachable_feeds }} unreachable.</p> 
+        </div>
+
+        <div id="feeds-table">
+            <table>
+                <tbody>
+                    {% for feed in feeds %}
+                    {% include "feed_item.html" %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
     </div>
 
-    <div id="feeds-table">
-    <table>
-        <tbody>
-            {% for feed in feeds %}
-            {% include 'feed_item.html' %}
-            {% endfor %}
-        </tbody>
-    </table>
-    </div>
-
-    </div>
-
-  </div>
+</div>
 {% endblock %}
 
