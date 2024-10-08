@@ -1,7 +1,7 @@
 import logging
 import time
-from datetime import datetime, timezone
-from typing import Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, field_validator
 
@@ -13,10 +13,13 @@ class FeedForm(BaseModel):
 
     feed_url: str
     feed_name: str
-    feed_type: Optional[str] = None
-    selected_tags: Optional[list[str] | str] = None
-    icon_url: Optional[str] = None
-    new_tag: Optional[str] = None
+    feed_type: str | None = None
+    selected_tags: list[str] | str | None = None
+    icon_url: str | None = None
+    new_tag: str | None = None
+    # new_tag: str | None
+    # this will simply be an empty string new_tag=""
+    # not sure why = None is here. Postgres? perhaps?
 
     @field_validator("selected_tags", mode="after")
     def selected_tags_to_list(cls, value):
@@ -42,10 +45,11 @@ class Feed(BaseModel):
     last_modified_header: str | None
     parsing_error_count: int
     created_at: datetime
-    tags: Optional[list[str | None]] = None
+    tags: list[str | None] | None = None
 
     @field_validator("tags", mode="after")
-    def null_arr_agg_to_none(cls, value):
+    # consider dealing with this in postgres.
+    def null_array_agg_to_none(cls, value):
         if value == [None]:
             return None
         else:
@@ -69,7 +73,7 @@ class NewFeedEntry(BaseModel):
     @staticmethod
     def parse_date(value):
         try:
-            return datetime.fromtimestamp(time.mktime(value), timezone.utc)
+            return datetime.fromtimestamp(time.mktime(value), UTC)
         except (ValueError, TypeError):
             log.info("Could not parse date.")
             return None
@@ -85,7 +89,25 @@ class NewFeedEntry(BaseModel):
         return value
 
 
-class FeedEntry(BaseModel):
+# class FeedEntry(BaseModel):
+#     """Represents an existing feed entry in the database.
+#     Matches the schema of the 'entries' table."""
+#
+#     entry_id: int
+#     entry_title: str
+#     entry_url: str
+#     author: str | None
+#     summary: str | None
+#     content: str | None
+#     published_date: datetime | None
+#     updated_date: datetime | None
+#     cleaned_content: str | None
+#     is_favourite: bool
+#     created_at: datetime
+#     feed_id: int | None  # saved entries after feed deletion
+#
+@dataclass
+class FeedEntry:
     """Represents an existing feed entry in the database.
     Matches the schema of the 'entries' table."""
 

@@ -1,7 +1,12 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from pathlib import Path
 from urllib.parse import urlparse
-from tzlocal import get_localzone
+
 import tldextract
+from jinja2 import Environment, FileSystemLoader
+from litestar.contrib.jinja import JinjaTemplateEngine
+from litestar.template.config import TemplateConfig
+from tzlocal import get_localzone
 
 
 def display_pub_date(entry_date: datetime | None) -> str:
@@ -9,7 +14,7 @@ def display_pub_date(entry_date: datetime | None) -> str:
     if entry_date is None:
         return ""
 
-    delta = datetime.now(timezone.utc) - entry_date
+    delta = datetime.now(UTC) - entry_date
 
     if delta.total_seconds() < 60:
         return f"{delta.seconds}s ago"
@@ -32,21 +37,33 @@ def display_pub_date(entry_date: datetime | None) -> str:
 
 
 def display_feed_url(url: str) -> str:
-    """Shorten feed source URL"""
+    """Shorten feed source URL."""
     extracted = tldextract.extract(url)
-    main_domain = extracted.domain + "." + extracted.suffix
-    return main_domain
+    return extracted.domain + "." + extracted.suffix
 
 
-def extract_main_url(feed_url: str) -> str:
-    """Get main website URL from feed URL"""
+def display_main_url(feed_url: str) -> str:
+    """Get main website URL from feed URL."""
     parsed_url = urlparse(feed_url)
-    main_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
-    return main_url
+    return f"{parsed_url.scheme}://{parsed_url.netloc}"
 
 
 def convert_utc_to_local(utc_datetime: datetime) -> datetime:
     local_tz = get_localzone()
-    _utc_datetime = utc_datetime.replace(tzinfo=timezone.utc)
-    converted_datetime = _utc_datetime.astimezone(local_tz)
-    return converted_datetime
+    _utc_datetime = utc_datetime.replace(tzinfo=UTC)
+    return _utc_datetime.astimezone(local_tz)
+
+
+jinja_env = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"))
+jinja_env.filters.update(
+    {
+        "display_pub_date": display_pub_date,
+        "display_feed_url": display_feed_url,
+        "display_main_url": display_main_url,
+        "utc_to_local": convert_utc_to_local,
+    }
+)
+
+template_config = TemplateConfig(
+    engine=JinjaTemplateEngine.from_environment(jinja_env),
+)

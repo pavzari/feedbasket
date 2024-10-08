@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+import aiosql
 import asyncpg
 
 from feedbasket import config
@@ -12,6 +13,9 @@ if TYPE_CHECKING:
     from litestar import Litestar
 
 log = logging.getLogger(__name__)
+
+
+queries = aiosql.from_path("./feedbasket/queries", "asyncpg")
 
 
 async def init_db(app: Litestar, queries: Queries) -> None:

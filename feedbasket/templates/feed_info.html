@@ -21,14 +21,14 @@
         <td>Latest Article</td>
         <td>
           {% if latest_entry_date %} {{ (latest_entry_date |
-          utc_to_local).strftime("%B %d, %Y") }} {% else %} - {% endif %}
+          utc_to_local).strftime("%B %d, %Y") }} {% endif %}
         </td>
       </tr>
       <tr>
         <td>Website</td>
         <td>
-          <a href="{{ feed.feed_url | extract_main_url }}"
-            >{{ feed.feed_url | extract_main_url }}</a
+          <a href="{{ feed.feed_url | display_main_url }}"
+            >{{ feed.feed_url | display_main_url }}</a
           >
         </td>
       </tr>

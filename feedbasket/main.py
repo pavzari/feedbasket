@@ -1,11 +1,8 @@
 import asyncio
 from contextlib import asynccontextmanager
-from pathlib import Path
 from typing import Annotated
 
-import aiosql
 from asyncpg.pool import Pool
-from jinja2 import Environment, FileSystemLoader
 from litestar import (
     Controller,
     Litestar,
@@ -18,7 +15,6 @@ from litestar import (
 )
 from litestar.contrib.htmx.request import HTMXRequest
 from litestar.contrib.htmx.response import ClientRedirect, HTMXTemplate
-from litestar.contrib.jinja import JinjaTemplateEngine
 from litestar.datastructures import State
 from litestar.enums import RequestEncodingType
 from litestar.exceptions import HTTPException
@@ -27,34 +23,13 @@ from litestar.params import Body
 from litestar.response import Redirect, Template
 from litestar.static_files import create_static_files_router
 from litestar.status_codes import HTTP_303_SEE_OTHER, HTTP_404_NOT_FOUND
-from litestar.template.config import TemplateConfig
 
 from feedbasket import config
-from feedbasket.database import close_db_pool, init_db
+from feedbasket.database import close_db_pool, init_db, queries
 from feedbasket.feedfinder import find_feed
-from feedbasket.filters import (
-    display_feed_url,
-    display_pub_date,
-    extract_main_url,
-    convert_utc_to_local,
-)
 from feedbasket.models import Feed, FeedEntry, FeedForm
 from feedbasket.scraper import FeedScraper
-
-jinja_env = Environment(loader=FileSystemLoader(Path(__file__).parent / "templates"))
-jinja_env.filters.update(
-    {
-        "display_pub_date": display_pub_date,
-        "display_feed_url": display_feed_url,
-        "extract_main_url": extract_main_url,
-        "utc_to_local": convert_utc_to_local,
-    }
-)
-template_config = TemplateConfig(
-    engine=JinjaTemplateEngine.from_environment(jinja_env),
-)
-
-queries = aiosql.from_path("./feedbasket/queries", "asyncpg")
+from feedbasket.template import template_config
 
 
 @asynccontextmanager
@@ -70,7 +45,7 @@ async def scrape_feeds(db_pool: Pool) -> None:
     await asyncio.sleep(1)
     scraper = FeedScraper(db_pool, queries)
     while True:
-        await scraper.run_scraper()
+        await scraper.run()
         await asyncio.sleep(config.FETCH_INTERVAL_SEC)
 
 
@@ -118,6 +93,9 @@ class FavouritesController(Controller):
         return HTMXTemplate(
             template_name="svg_star_empty.html",
             context={"entry": {"entry_id": entry_id}},
+            # trigger_event="showMessage",
+            # params={"alert": "This is a message..."},
+            # after="receive",
         )
 
     @get()
@@ -213,13 +191,13 @@ class SubscriptionsController(Controller):
                     )
 
         scraper = FeedScraper(state.pool, queries)
-        await scraper.run_scraper(data.feed_url)
+        await scraper.run(data.feed_url)
         return Redirect(path="/")
 
     @get(path="/{feed_id:int}/edit")
     async def view_feed_info(self, feed_id: int, state: State) -> Template:
         async with state.pool.acquire() as conn:
-            feed = await queries.get_single_feed(conn, feed_id=feed_id)
+            feed = await queries.get_feed_by_id(conn, feed_id=feed_id)
 
             if not feed:
                 raise HTTPException(status_code=404, detail="Feed not found")
@@ -251,7 +229,6 @@ class SubscriptionsController(Controller):
         state: State,
         data: Annotated[FeedForm, Body(media_type=RequestEncodingType.URL_ENCODED)],
     ) -> Redirect:
-
         # combine checkeckboxes and new tag if present.
         tags = []
         if data.selected_tags:

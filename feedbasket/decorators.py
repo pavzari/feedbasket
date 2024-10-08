@@ -1,7 +1,7 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
 
 log = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class RetryLimitError(Exception):
 
 
 def retry(
-    *exceptions: tuple[Exception],
+    *exceptions: type[Exception],
     retries: int = 3,
     wait: int = 1,
     emit_log: bool = False,
@@ -42,11 +42,12 @@ def retry(
                     msg = f"Exception during {func} execution. {retries_count} of {retries} retries attempted."
 
                     if retries_count >= retries:
-                        emit_log and log.warning(msg)
+                        if emit_log:
+                            log.warning(msg)
                         raise RetryLimitError(func.__name__, args, kwargs) from e
                     else:
-                        emit_log and log.warning(msg)
-
+                        if emit_log:
+                            log.warning(msg)
                     if wait:
                         await asyncio.sleep(wait)
                 else:

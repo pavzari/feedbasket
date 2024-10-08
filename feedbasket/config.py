@@ -17,7 +17,7 @@ DEFAULT_FEEDS = [
     "https://simonwillison.net/atom/everything/",
 ]
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
 GET_TIMEOUT = 10
 FETCH_INTERVAL_SEC = 1800
 SKIP_OLDER_THAN_DAYS = 60

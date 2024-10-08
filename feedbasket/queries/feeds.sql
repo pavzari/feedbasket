@@ -36,11 +36,11 @@ FROM
 GROUP BY
     f.feed_id;
 
--- name: get-single-feed^
+-- name: get-feed-by-id^
 SELECT * FROM feeds
 WHERE feed_id = :feed_id;
 
--- name: get_feed_by_url
+-- name: get_feed_by_url^
 SELECT * FROM feeds
 WHERE feed_url = :feed_url;
 

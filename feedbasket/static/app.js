@@ -41,3 +41,6 @@ document.body.addEventListener("click", (event) => {
         modal.close();
     }
 });
+document.body.addEventListener("showMessage", function(evt) {
+    alert(evt.detail.alert);
+});

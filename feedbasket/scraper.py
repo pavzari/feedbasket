@@ -3,7 +3,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import datetime, timezone
+from collections.abc import AsyncIterator
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import feedparser
@@ -15,7 +16,7 @@ from feedbasket.models import Feed, NewFeedEntry
 
 if TYPE_CHECKING:
     from aiosql.queries import Queries
-    from asyncpg import Pool
+    from asyncpg import Connection, Pool
 
 
 # from feedbasket.readability import extract_content_readability
@@ -36,11 +37,10 @@ class FeedScraper:
         log.info(f"Updating feed: {feed_url}")
         async with self._pool.acquire() as conn:
             for entry in entries:
-                entry_kwargs = entry.model_dump()
                 await self._queries.insert_entry(
                     conn,
                     feed_id=feed_id,
-                    **entry_kwargs,
+                    **entry.model_dump(),
                 )
         log.debug(f"Updated feed: {feed_url}")
 
@@ -49,7 +49,7 @@ class FeedScraper:
         feed_url: str,
         etag_header: str,
         last_modified_header: str,
-        last_updated: datetime,
+        last_updated: datetime | None,
     ) -> None:
         log.debug(f"Updating feed metadata: {feed_url}")
         async with self._pool.acquire() as conn:
@@ -66,13 +66,14 @@ class FeedScraper:
         async with self._pool.acquire() as conn:
             await self._queries.update_feed_error_count(conn, feed_id=feed_id)
 
-    def _parse_feed(self, feed_xml: str, last_updated: datetime) -> list[NewFeedEntry]:
+    def _parse_feed(
+        self, feed_xml: str, last_updated: datetime | None
+    ) -> list[NewFeedEntry]:
         feed_data = feedparser.parse(feed_xml)
-        current_datetime_utc = datetime.now(timezone.utc)
+        current_datetime_utc = datetime.now(UTC)
 
         # Some feeds have incorrect published date that does not match the lastest entry date.
-        # Can't use that to skip parsing the entries if the server ignores the etag and last-modified headers.
-        # Not much I can do about that at the moment.
+        # Can't use it to skip parsing the entries if server also ignores the etag and last-modified headers.
 
         # if feed_published := feed_data.feed.get("updated_parsed"):
         #     feed_published_datetime = datetime.fromtimestamp(
@@ -92,9 +93,7 @@ class FeedScraper:
         for entry in feed_data.entries:
             try:
                 published = entry.get("published_parsed", entry.get("updated_parsed"))
-                published_datetime = datetime.fromtimestamp(
-                    time.mktime(published), timezone.utc
-                )
+                published_datetime = datetime.fromtimestamp(time.mktime(published), UTC)
             except (ValueError, TypeError):
                 log.debug("Skipping entry: invalid/no publication date.")
                 continue
@@ -106,8 +105,7 @@ class FeedScraper:
                 )
                 continue
 
-            # skip if last_updated is not None and published before last fetch
-            # mostly for feeds that ignore etag and last_modified
+            # Skip if last_updated is not None and published before last fetch: for feeds that ignore etag/last_modified
             if last_updated and published_datetime < last_updated:
                 log.debug("Skipping entry: duplicate.")
                 continue
@@ -150,7 +148,6 @@ class FeedScraper:
             timeout=config.GET_TIMEOUT,
             headers=headers,
         ) as response:
-
             if response.status == 304:
                 log.info(f"No updates to: {feed.feed_url}")
                 return
@@ -172,8 +169,8 @@ class FeedScraper:
             await self._update_feed_error_count(feed.feed_id)
             return
 
-        # entries = self._parse_feed(feed_xml, feed.last_updated)
         log.debug(f"Parsing feed: {feed.feed_url}")
+
         loop = asyncio.get_running_loop()
         entries = await loop.run_in_executor(
             None, self._parse_feed, feed_xml, feed.last_updated
@@ -182,46 +179,35 @@ class FeedScraper:
         last_updated = feed.last_updated
         if entries:
             await self._update_feed(entries, feed.feed_url, feed.feed_id)
-            last_updated = datetime.now(timezone.utc)
+            last_updated = datetime.now(UTC)
 
-        # Update etag/last-modified regardless of whether new entries are added
-        # to prevent parsing the feed again. Keep the last_updated unchanged.
+        # Update etag/last-modified to prevent parsing the feed again. Last_updated unchanged if no entries.
         await self._update_feed_metadata(
             feed.feed_url,
             etag_header,
             last_modified_header,
-            last_updated=last_updated,
+            last_updated,
         )
 
-        # asyncio.create_task(self._update_feed(entries, feed.feed_url, feed.feed_id))
-        # asyncio.create_task(
-        #     self._update_feed_metadata(
-        #         feed.feed_url,
-        #         etag_header,
-        #         last_modified_header,
-        #         last_updated=datetime.now(),
-        #     )
-        # )
+    async def _get_all_feeds(self, conn: Connection) -> AsyncIterator[Feed]:
+        # Append _cursor to query name to access cursor object.
+        async with self._queries.get_all_feeds_cursor(conn) as cursor:
+            async for feed in cursor:
+                yield Feed(**feed)
 
-    async def run_scraper(self, url: str | None = None) -> None:
+    async def run(self, url: str | None = None) -> None:
+        start = time.perf_counter()
+        count = 0
 
         async with self._pool.acquire() as conn:
-            if url:
-                feeds = [
-                    Feed(**feed)
-                    for feed in await self._queries.get_feed_by_url(conn, url)
-                ]
-            else:
-                feeds = [
-                    Feed(**feed) for feed in await self._queries.get_all_feeds(conn)
-                ]
+            async with ClientSession() as session:
+                if url:
+                    feed = Feed(**await self._queries.get_feed_by_url(conn, url))
+                    count = 1
+                    await self._scrape_feed(session, feed)
+                else:
+                    async for feed in self._get_all_feeds(conn):
+                        count += 1
+                        await self._scrape_feed(session, feed)
 
-        if not feeds:
-            log.info("No feeds to scrape.")
-            return
-
-        start_time = time.monotonic()
-        async with ClientSession() as session:
-            tasks = [self._scrape_feed(session, feed) for feed in feeds]
-            await asyncio.gather(*tasks)
-        print("time: ", time.monotonic() - start_time)
+        log.info(f"Scraping time: {time.perf_counter() - start}, Feed count: {count}")
